@@ -65,6 +65,7 @@ module Huefy
       # @return [Boolean]
       def retryable?(error)
         return false unless error.is_a?(HuefyError)
+        return true if error.recoverable? && error.status_code.nil?
         return false unless error.status_code
 
         @retryable_status_codes.include?(error.status_code)
