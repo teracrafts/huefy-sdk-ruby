@@ -125,20 +125,25 @@ module Huefy
     end
 
     # Creates an error from an HTTP response status code and body.
-    def self.from_response(status_code, body = nil)
+    #
+    # @param status_code [Integer] HTTP status code
+    # @param body [String, nil] response body
+    # @param request_id [String, nil] value of the X-Request-Id response header
+    # @param retry_after [Float, nil] parsed Retry-After value in seconds
+    def self.from_response(status_code, body = nil, request_id: nil, retry_after: nil)
       case status_code
       when 401
-        new(body || "Unauthorized", code: ErrorCodes::AUTH_UNAUTHORIZED, status_code: 401)
+        new(body || "Unauthorized", code: ErrorCodes::AUTH_UNAUTHORIZED, status_code: 401, request_id: request_id)
       when 403
-        new(body || "Forbidden", code: ErrorCodes::AUTH_INVALID_KEY, status_code: 403)
+        new(body || "Forbidden", code: ErrorCodes::AUTH_INVALID_KEY, status_code: 403, request_id: request_id)
       when 408
-        new(body || "Request timeout", code: ErrorCodes::NETWORK_TIMEOUT, status_code: 408)
+        new(body || "Request timeout", code: ErrorCodes::NETWORK_TIMEOUT, status_code: 408, request_id: request_id)
       when 429
-        new(body || "Rate limited", code: ErrorCodes::NETWORK_RETRY_LIMIT, status_code: 429)
+        new(body || "Rate limited", code: ErrorCodes::NETWORK_RETRY_LIMIT, status_code: 429, request_id: request_id, retry_after: retry_after)
       when 500..599
-        new(body || "Server error", code: ErrorCodes::NETWORK_SERVICE_UNAVAILABLE, status_code: status_code)
+        new(body || "Server error", code: ErrorCodes::NETWORK_SERVICE_UNAVAILABLE, status_code: status_code, request_id: request_id)
       else
-        new(body || "HTTP #{status_code}", code: ErrorCodes::NETWORK_ERROR, status_code: status_code)
+        new(body || "HTTP #{status_code}", code: ErrorCodes::NETWORK_ERROR, status_code: status_code, request_id: request_id)
       end
     end
   end
