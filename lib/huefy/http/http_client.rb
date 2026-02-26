@@ -2,6 +2,7 @@
 
 require "faraday"
 require "json"
+require "time"
 
 module Huefy
   module Http
@@ -40,21 +41,21 @@ module Huefy
       def request(method, path, body: nil, headers: {})
         extra_headers = headers.dup
 
+        serialized_body = body.is_a?(Hash) ? JSON.generate(body) : (body || "")
+
         # Request signing
         if @config.enable_request_signing
-          timestamp = Time.now.to_i.to_s
+          timestamp = (Time.now.to_f * 1000).to_i.to_s
           extra_headers["X-Timestamp"] = timestamp
           extra_headers["X-Key-Id"] = @api_key[0, 8]
 
-          payload = [method, path, timestamp, body ? JSON.generate(body) : ""].join("\n")
-          signature = Security.generate_hmac_sha256(payload, @api_key)
+          message = "#{timestamp}.#{serialized_body}"
+          signature = Security.generate_hmac_sha256(message, @api_key)
           extra_headers["X-Signature"] = signature
         end
 
-        serialized_body = body.is_a?(Hash) ? JSON.generate(body) : body
-
-        @retry_handler.execute do
-          @circuit_breaker.execute do
+        @circuit_breaker.execute do
+          @retry_handler.execute do
             perform_request(method, path, serialized_body, extra_headers)
           end
         end
@@ -79,7 +80,27 @@ module Huefy
 
         unless (200..299).cover?(status)
           body_text = response.body.to_s
-          raise HuefyError.from_response(status, body_text)
+          if @config.enable_error_sanitization
+            body_text = ErrorSanitizer.sanitize(body_text)
+          end
+
+          request_id = response.headers["x-request-id"]
+          retry_after_raw = response.headers["retry-after"]
+          retry_after_secs = nil
+          if retry_after_raw
+            parsed = retry_after_raw.to_f
+            if parsed > 0
+              retry_after_secs = parsed
+            else
+              begin
+                retry_after_secs = [Time.httpdate(retry_after_raw) - Time.now, 0].max
+              rescue ArgumentError
+                # Ignore unparseable Retry-After values
+              end
+            end
+          end
+
+          raise HuefyError.from_response(status, body_text, request_id: request_id, retry_after: retry_after_secs)
         end
 
         # 204 No Content
@@ -87,21 +108,19 @@ module Huefy
 
         JSON.parse(response.body)
       rescue Faraday::TimeoutError => e
-        raise HuefyError.timeout_error(
-          "Request to #{method} #{path} timed out after #{@config.timeout}s"
-        )
+        msg = "Request to #{method} #{path} timed out after #{@config.timeout}s"
+        msg = ErrorSanitizer.sanitize(msg) if @config.enable_error_sanitization
+        raise HuefyError.timeout_error(msg)
       rescue Faraday::ConnectionFailed => e
-        raise HuefyError.network_error(
-          "Network error during #{method} #{path}",
-          cause: e
-        )
+        msg = "Network error during #{method} #{path}"
+        msg = ErrorSanitizer.sanitize(msg) if @config.enable_error_sanitization
+        raise HuefyError.network_error(msg, cause: e)
       rescue HuefyError
         raise
       rescue StandardError => e
-        raise HuefyError.network_error(
-          "Unexpected error during #{method} #{path}: #{e.message}",
-          cause: e
-        )
+        msg = "Unexpected error during #{method} #{path}: #{e.message}"
+        msg = ErrorSanitizer.sanitize(msg) if @config.enable_error_sanitization
+        raise HuefyError.network_error(msg, cause: e)
       end
     end
   end
