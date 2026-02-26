@@ -34,7 +34,7 @@ module Huefy
       circuit_breaker_config: {},
       secondary_api_key: nil,
       enable_request_signing: false,
-      enable_error_sanitization: false
+      enable_error_sanitization: true
     )
       raise HuefyError.auth_missing_key("API key is required") if api_key.nil? || api_key.strip.empty?
 
