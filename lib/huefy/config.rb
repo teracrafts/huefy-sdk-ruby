@@ -12,7 +12,7 @@ module Huefy
     max_retries: 3,
     base_delay: 1.0,
     max_delay: 30.0,
-    retryable_status_codes: [429, 500, 502, 503, 504]
+    retryable_status_codes: [408, 429, 500, 502, 503, 504]
   }.freeze
 
   # Default circuit breaker configuration.
@@ -74,7 +74,7 @@ module Huefy
       circuit_breaker_config: {},
       secondary_api_key: nil,
       enable_request_signing: false,
-      enable_error_sanitization: false
+      enable_error_sanitization: true
     )
       @api_key = api_key
       @base_url = (base_url || Huefy.resolve_base_url).chomp("/")
@@ -84,6 +84,17 @@ module Huefy
       @secondary_api_key = secondary_api_key
       @enable_request_signing = enable_request_signing
       @enable_error_sanitization = enable_error_sanitization
+
+      validate_config!
+    end
+
+    private
+
+    def validate_config!
+      raise ArgumentError, "base_delay must be > 0" unless @retry_config[:base_delay].positive?
+      raise ArgumentError, "max_delay must be >= base_delay" unless @retry_config[:max_delay] >= @retry_config[:base_delay]
+      raise ArgumentError, "reset_timeout must be > 0" unless @circuit_breaker_config[:reset_timeout].positive?
+      raise ArgumentError, "failure_threshold must be >= 1" unless @circuit_breaker_config[:failure_threshold] >= 1
     end
   end
 end
