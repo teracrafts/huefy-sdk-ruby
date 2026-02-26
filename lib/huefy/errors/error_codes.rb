@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module Huefy
   # Canonical error codes used throughout the Huefy Ruby SDK.
   #
