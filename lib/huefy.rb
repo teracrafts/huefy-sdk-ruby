@@ -10,6 +10,10 @@ require_relative "huefy/http/circuit_breaker"
 require_relative "huefy/http/retry_handler"
 require_relative "huefy/http/http_client"
 require_relative "huefy/security/security"
+require_relative "huefy/models/email_provider"
+require_relative "huefy/models/email"
+require_relative "huefy/validators/email_validators"
+require_relative "huefy/huefy_email_client"
 
 # Huefy Ruby SDK
 #
