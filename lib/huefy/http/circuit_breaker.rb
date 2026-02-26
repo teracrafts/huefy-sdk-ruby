@@ -35,19 +35,27 @@ module Huefy
 
       # Wraps a block with circuit breaker semantics.
       #
+      # The mutex is only held for state checks and counter mutations, never
+      # during the actual block execution, so concurrent requests are not
+      # serialised.
+      #
       # @yield the operation to protect
       # @return the result of the block
       # @raise [HuefyError] with code CIRCUIT_OPEN when the circuit is open
       def execute(&block)
         @mutex.synchronize do
-          case @state
-          when OPEN
-            return handle_open(&block)
-          when HALF_OPEN
-            return handle_half_open(&block)
-          else
-            return handle_closed(&block)
+          check_state_and_admit
+        end
+
+        begin
+          result = block.call
+          @mutex.synchronize { record_success }
+          result
+        rescue StandardError => e
+          if e.respond_to?(:recoverable?) && e.recoverable?
+            @mutex.synchronize { record_failure }
           end
+          raise
         end
       end
 
@@ -89,62 +97,66 @@ module Huefy
 
       private
 
-      def handle_closed(&block)
-        result = block.call
-        on_success
-        result
-      rescue StandardError => e
-        on_failure
-        transition_to(OPEN) if @failures >= @failure_threshold
-        raise
+      # Called inside @mutex. Raises if the circuit will not admit a request;
+      # otherwise prepares state so the request can proceed.
+      def check_state_and_admit
+        case @state
+        when OPEN
+          if @last_failure_time.nil?
+            transition_to(CLOSED)
+            return
+          end
+
+          elapsed = Time.now - @last_failure_time
+
+          if elapsed >= @reset_timeout
+            transition_to(HALF_OPEN)
+            @half_open_attempts = 0
+          else
+            retry_after = @reset_timeout - elapsed
+            raise HuefyError.circuit_open_error(retry_after: retry_after)
+          end
+
+          # Now in HALF_OPEN — fall through to the half-open check below
+          check_half_open_admission
+        when HALF_OPEN
+          check_half_open_admission
+        end
+        # CLOSED always admits
       end
 
-      def handle_open(&block)
-        if @last_failure_time.nil?
-          transition_to(CLOSED)
-          return handle_closed(&block)
-        end
-
-        elapsed = Time.now - @last_failure_time
-
-        if elapsed >= @reset_timeout
-          transition_to(HALF_OPEN)
-          @half_open_attempts = 0
-          return handle_half_open(&block)
-        end
-
-        retry_after = @reset_timeout - elapsed
-        raise HuefyError.circuit_open_error(retry_after: retry_after)
-      end
-
-      def handle_half_open(&block)
+      def check_half_open_admission
         if @half_open_attempts >= @half_open_requests
           raise HuefyError.circuit_open_error(retry_after: @reset_timeout)
         end
 
         @half_open_attempts += 1
+      end
 
-        begin
-          result = block.call
-          on_success
+      # Called inside @mutex after a successful request.
+      def record_success
+        @successes += 1
+        @last_success_time = Time.now
+
+        case @state
+        when HALF_OPEN
           transition_to(CLOSED)
-          result
-        rescue StandardError => e
-          on_failure
-          transition_to(OPEN)
-          raise
+        when CLOSED
+          @failures = 0
         end
       end
 
-      def on_success
-        @successes += 1
-        @last_success_time = Time.now
-        @failures = 0 if @state == CLOSED
-      end
-
-      def on_failure
+      # Called inside @mutex after a failed request.
+      def record_failure
         @failures += 1
         @last_failure_time = Time.now
+
+        case @state
+        when CLOSED
+          transition_to(OPEN) if @failures >= @failure_threshold
+        when HALF_OPEN
+          transition_to(OPEN)
+        end
       end
 
       def transition_to(new_state)
