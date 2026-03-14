@@ -54,8 +54,8 @@ module Huefy
           extra_headers["X-Signature"] = signature
         end
 
-        @circuit_breaker.execute do
-          @retry_handler.execute do
+        @retry_handler.execute do
+          @circuit_breaker.execute do
             perform_request(method, path, serialized_body, extra_headers)
           end
         end
