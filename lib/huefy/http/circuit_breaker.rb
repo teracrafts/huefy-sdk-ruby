@@ -72,12 +72,14 @@ module Huefy
 
       # Resets the circuit breaker to a pristine closed state.
       def reset
-        @state = CLOSED
-        @failures = 0
-        @successes = 0
-        @half_open_attempts = 0
-        @last_failure_time = nil
-        @last_success_time = nil
+        @mutex.synchronize do
+          @state = CLOSED
+          @failures = 0
+          @successes = 0
+          @half_open_attempts = 0
+          @last_failure_time = nil
+          @last_success_time = nil
+        end
       end
 
       # Returns a snapshot of the circuit breaker statistics.
