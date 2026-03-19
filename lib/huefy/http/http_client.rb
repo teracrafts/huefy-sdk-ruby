@@ -6,6 +6,9 @@ require "time"
 
 module Huefy
   module Http
+    # Carries parsed rate-limit header values from an API response.
+    RateLimitInfo = Struct.new(:limit, :remaining, :reset_at, keyword_init: true)
+
     # Internal HTTP client that wraps Faraday with retry logic and circuit
     # breaking for the Huefy Ruby SDK.
     class HttpClient
@@ -106,6 +109,8 @@ module Huefy
         # 204 No Content
         return {} if status == 204
 
+        parse_rate_limit_headers(response)
+
         JSON.parse(response.body)
       rescue Faraday::TimeoutError => e
         msg = "Request to #{method} #{path} timed out after #{@config.timeout}s"
@@ -121,6 +126,26 @@ module Huefy
         msg = "Unexpected error during #{method} #{path}: #{e.message}"
         msg = ErrorSanitizer.sanitize(msg) if @config.enable_error_sanitization
         raise HuefyError.network_error(msg, cause: e)
+      end
+
+      def parse_rate_limit_headers(response)
+        limit_raw     = response.headers["x-ratelimit-limit"]
+        remaining_raw = response.headers["x-ratelimit-remaining"]
+        reset_raw     = response.headers["x-ratelimit-reset"]
+
+        return unless limit_raw && remaining_raw && reset_raw
+
+        limit     = limit_raw.to_i
+        remaining = remaining_raw.to_i
+        reset_at  = Time.at(reset_raw.to_i)
+
+        info = RateLimitInfo.new(limit: limit, remaining: remaining, reset_at: reset_at)
+
+        @config.on_rate_limit_update&.call(info)
+
+        if limit > 0 && remaining < (limit * 0.2)
+          @config.on_rate_limit_warning&.call(info)
+        end
       end
     end
   end
