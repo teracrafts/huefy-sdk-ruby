@@ -58,6 +58,12 @@ module Huefy
     # @return [Boolean] whether error message sanitization is enabled
     attr_reader :enable_error_sanitization
 
+    # @return [#call, nil] callback invoked with a RateLimitInfo on every response
+    attr_reader :on_rate_limit_update
+
+    # @return [#call, nil] callback invoked with a RateLimitInfo when remaining < 20% of limit
+    attr_reader :on_rate_limit_warning
+
     # @param api_key [String] the API key for authentication
     # @param base_url [String, nil] override the default base URL
     # @param timeout [Integer] HTTP request timeout in seconds
@@ -66,6 +72,8 @@ module Huefy
     # @param secondary_api_key [String, nil] fallback API key
     # @param enable_request_signing [Boolean] enable HMAC request signing
     # @param enable_error_sanitization [Boolean] enable error sanitization
+    # @param on_rate_limit_update [#call, nil] callback for rate limit info on every response
+    # @param on_rate_limit_warning [#call, nil] callback when remaining < 20% of limit
     def initialize(
       api_key:,
       base_url: nil,
@@ -74,7 +82,9 @@ module Huefy
       circuit_breaker_config: {},
       secondary_api_key: nil,
       enable_request_signing: false,
-      enable_error_sanitization: true
+      enable_error_sanitization: true,
+      on_rate_limit_update: nil,
+      on_rate_limit_warning: nil
     )
       @api_key = api_key
       @base_url = (base_url || Huefy.resolve_base_url).chomp("/")
@@ -84,6 +94,8 @@ module Huefy
       @secondary_api_key = secondary_api_key
       @enable_request_signing = enable_request_signing
       @enable_error_sanitization = enable_error_sanitization
+      @on_rate_limit_update = on_rate_limit_update
+      @on_rate_limit_warning = on_rate_limit_warning
 
       validate_config!
     end
