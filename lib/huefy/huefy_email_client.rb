@@ -7,10 +7,11 @@ module Huefy
   # @example
   #   client = Huefy::EmailClient.new(api_key: "your-api-key")
   #   response = client.send_email("welcome", { "name" => "John" }, "john@example.com")
-  #   puts response.message_id
+  #   puts response.correlation_id
   #   client.close
   class EmailClient < Client
     SEND_EMAIL_PATH = "/emails/send"
+    SEND_BULK_EMAIL_PATH = "/emails/send-bulk"
     HEALTH_PATH = "/health"
 
     # Sends a single email using the Huefy API.
@@ -51,43 +52,37 @@ module Huefy
       Models::SendEmailResponse.from_hash(response)
     end
 
-    # Sends emails to multiple recipients using the same template.
+    # Sends emails to multiple recipients using the bulk API.
     #
     # @param template_key [String] the template identifier
-    # @param data [Hash<String, String>] template merge data
-    # @param recipients [Array<String>] array of recipient email addresses
-    # @param provider [String, nil] optional email provider
-    # @return [Array<Models::BulkEmailResult>]
+    # @param recipients [Array<Models::BulkRecipient, Hash>] array of recipient objects
+    # @param options [Hash] optional additional parameters (from_email, from_name, provider_type, etc.)
+    # @return [Models::SendBulkEmailsResponse]
     # @raise [HuefyError] if bulk count validation fails
-    def send_bulk_emails(template_key, data, recipients, provider: nil)
+    def send_bulk_emails(template_key:, recipients:, **options)
       count_err = Validators::EmailValidators.validate_bulk_count(recipients.length)
       if count_err
         raise HuefyError.new(count_err, code: ErrorCodes::VALIDATION_ERROR)
       end
 
-      if provider && !Models::EmailProvider.valid?(provider)
-        raise HuefyError.new(
-          "Invalid provider: #{provider}. Must be one of: #{Models::EmailProvider::ALL.join(', ')}",
-          code: ErrorCodes::VALIDATION_ERROR
-        )
-      end
+      camel_options = options.transform_keys { |k| k.to_s.gsub(/_([a-z])/) { $1.upcase }.to_sym }
 
-      recipients.map do |recipient|
-        begin
-          response = send_email(template_key, data, recipient, provider: provider)
-          Models::BulkEmailResult.new(
-            email: recipient,
-            success: true,
-            result: response
-          )
-        rescue HuefyError => e
-          Models::BulkEmailResult.new(
-            email: recipient,
-            success: false,
-            error: { "message" => e.message, "code" => e.code }
-          )
-        end
-      end
+      body = {
+        templateKey: template_key,
+        recipients: recipients.map { |r|
+          entry = {
+            email: r.respond_to?(:email) ? r.email : r[:email],
+            type: (r.respond_to?(:type) ? r.type : r[:type]) || "to",
+            data: r.respond_to?(:data) ? r.data : r[:data]
+          }
+          entry.compact
+        },
+        **camel_options
+      }
+
+      response = @http_client.request("POST", SEND_BULK_EMAIL_PATH, body: body)
+
+      Models::SendBulkEmailsResponse.from_hash(response)
     end
 
     # Performs a typed health check against the API.
