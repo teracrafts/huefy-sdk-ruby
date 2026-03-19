@@ -20,5 +20,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "faraday", "~> 2.0"
 
   spec.add_development_dependency "rspec", "~> 3.12"
+  spec.add_development_dependency "rubocop", "~> 1.65"
   spec.add_development_dependency "webmock", "~> 3.19"
 end
