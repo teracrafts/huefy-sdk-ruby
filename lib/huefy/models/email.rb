@@ -41,81 +41,78 @@ module Huefy
       end
     end
 
-    # Represents the response from sending an email.
-    class SendEmailResponse
-      # @return [Boolean] whether the send was successful
-      attr_reader :success
-
-      # @return [String] response message
-      attr_reader :message
-
-      # @return [String] the message ID from the provider
-      attr_reader :message_id
-
-      # @return [String] the provider that sent the email
-      attr_reader :provider
-
-      # @param success [Boolean]
-      # @param message [String]
-      # @param message_id [String]
-      # @param provider [String]
-      def initialize(success:, message:, message_id:, provider:)
-        @success = success
-        @message = message
-        @message_id = message_id
-        @provider = provider
-      end
-
-      # Creates a SendEmailResponse from a parsed JSON hash.
-      #
-      # @param hash [Hash] parsed API response
-      # @return [SendEmailResponse]
+    # Represents the per-recipient status in a send-email response.
+    RecipientStatus = Struct.new(:email, :status, :message_id, :error, :sent_at, keyword_init: true) do
       def self.from_hash(hash)
         new(
-          success: hash["success"] || false,
-          message: hash["message"] || "",
-          message_id: hash["messageId"] || "",
-          provider: hash["provider"] || ""
+          email: hash["email"] || "",
+          status: hash["status"] || "",
+          message_id: hash["messageId"],
+          error: hash["error"],
+          sent_at: hash["sentAt"]
         )
       end
     end
 
-    # Represents the result of a single email within a bulk operation.
-    class BulkEmailResult
-      # @return [String] the recipient email address
-      attr_reader :email
-
-      # @return [Boolean] whether this individual send succeeded
-      attr_reader :success
-
-      # @return [SendEmailResponse, nil] the response if successful
-      attr_reader :result
-
-      # @return [Hash, nil] error details if the send failed
-      attr_reader :error
-
-      # @param email [String]
-      # @param success [Boolean]
-      # @param result [SendEmailResponse, nil]
-      # @param error [Hash, nil]
-      def initialize(email:, success:, result: nil, error: nil)
-        @email = email
-        @success = success
-        @result = result
-        @error = error
-      end
-
-      # Creates a BulkEmailResult from a parsed JSON hash.
-      #
-      # @param hash [Hash]
-      # @return [BulkEmailResult]
+    # Represents the data payload in a send-email response.
+    SendEmailResponseData = Struct.new(:email_id, :status, :recipients, keyword_init: true) do
       def self.from_hash(hash)
-        result = hash["result"] ? SendEmailResponse.from_hash(hash["result"]) : nil
+        recipients = (hash["recipients"] || []).map { |r| RecipientStatus.from_hash(r) }
         new(
-          email: hash["email"] || "",
+          email_id: hash["emailId"] || "",
+          status: hash["status"] || "",
+          recipients: recipients
+        )
+      end
+    end
+
+    # Represents the response from sending a single email.
+    SendEmailResponse = Struct.new(:success, :data, :correlation_id, keyword_init: true) do
+      def self.from_hash(hash)
+        new(
           success: hash["success"] || false,
-          result: result,
-          error: hash["error"]
+          data: SendEmailResponseData.from_hash(hash["data"] || {}),
+          correlation_id: hash["correlationId"] || ""
+        )
+      end
+    end
+
+    # Represents a recipient entry in a bulk email request.
+    BulkRecipient = Struct.new(:email, :type, :data, keyword_init: true) do
+      def initialize(email:, type: "to", data: nil)
+        super(email: email, type: type, data: data)
+      end
+    end
+
+    # Represents the data payload in a send-bulk-emails response.
+    SendBulkEmailsResponseData = Struct.new(
+      :batch_id, :status, :template_key, :total_recipients,
+      :success_count, :failure_count, :suppressed_count, :started_at, :recipients,
+      keyword_init: true
+    ) do
+      def self.from_hash(hash)
+        recipients = (hash["recipients"] || []).map { |r| RecipientStatus.from_hash(r) }
+        new(
+          batch_id: hash["batchId"] || "",
+          status: hash["status"] || "",
+          template_key: hash["templateKey"] || "",
+          total_recipients: hash["totalRecipients"] || 0,
+          success_count: hash["successCount"] || 0,
+          failure_count: hash["failureCount"] || 0,
+          suppressed_count: hash["suppressedCount"] || 0,
+          started_at: hash["startedAt"] || "",
+          recipients: recipients
+        )
+      end
+    end
+
+    # Represents the response from sending bulk emails.
+    SendBulkEmailsResponse = Struct.new(:success, :data, :correlation_id, keyword_init: true) do
+      def self.from_hash(hash)
+        new(
+          success: hash["success"] || false,
+          data: SendBulkEmailsResponseData.from_hash(hash["data"] || {}),
+          correlation_id: hash["correlationId"] || ""
         )
       end
     end
@@ -142,7 +139,7 @@ module Huefy
 
       # Creates a HealthResponse from a parsed JSON hash.
       #
-      # @param hash [Hash]
+      # @param hash [Hash] parsed API response
       # @return [HealthResponse]
       def self.from_hash(hash)
         new(
