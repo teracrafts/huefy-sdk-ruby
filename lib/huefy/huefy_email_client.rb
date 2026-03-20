@@ -65,6 +65,14 @@ module Huefy
         raise HuefyError.new(count_err, code: ErrorCodes::VALIDATION_ERROR)
       end
 
+      recipients.each_with_index do |r, i|
+        email = r.respond_to?(:email) ? r.email : r[:email]
+        email_err = Validators::EmailValidators.validate_email(email)
+        if email_err
+          raise HuefyError.new("recipients[#{i}]: #{email_err}", code: ErrorCodes::VALIDATION_ERROR)
+        end
+      end
+
       camel_options = options.transform_keys { |k| k.to_s.gsub(/_([a-z])/) { $1.upcase }.to_sym }
 
       body = {
