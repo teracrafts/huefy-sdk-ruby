@@ -7,13 +7,13 @@ module Huefy
     class RetryHandler
       # @param config [Hash] retry configuration
       # @option config [Integer] :max_retries maximum retry attempts (default: 3)
-      # @option config [Float] :base_delay base delay in seconds (default: 1.0)
-      # @option config [Float] :max_delay maximum delay in seconds (default: 30.0)
+      # @option config [Float] :base_delay base delay in seconds (default: 0.5)
+      # @option config [Float] :max_delay maximum delay in seconds (default: 10.0)
       # @option config [Array<Integer>] :retryable_status_codes HTTP codes eligible for retry
       def initialize(config = {})
         @max_retries = config[:max_retries] || 3
-        @base_delay = config[:base_delay] || 1.0
-        @max_delay = config[:max_delay] || 30.0
+        @base_delay = config[:base_delay] || 0.5
+        @max_delay = config[:max_delay] || 10.0
         @retryable_status_codes = config[:retryable_status_codes] || [429, 500, 502, 503, 504]
       end
 
@@ -72,7 +72,7 @@ module Huefy
       end
 
       # Calculates the delay for a given retry attempt using exponential
-      # backoff with +/-25% jitter.
+      # backoff with +/-20% jitter.
       #
       # @param attempt [Integer] zero-based attempt index (0 = first retry)
       # @return [Float] delay in seconds
@@ -80,8 +80,8 @@ module Huefy
         exponential = @base_delay * (2**attempt)
         capped = [exponential, @max_delay].min
 
-        # Apply +/-25% jitter: factor in [0.75, 1.25)
-        jitter_factor = 0.75 + rand * 0.5
+        # Apply +/-20% jitter: factor in [0.8, 1.2)
+        jitter_factor = 0.8 + rand * 0.4
         capped * jitter_factor
       end
     end
