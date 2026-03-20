@@ -7,7 +7,7 @@ module Huefy
       EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.freeze
       MAX_EMAIL_LENGTH = 254
       MAX_TEMPLATE_KEY_LENGTH = 100
-      MAX_BULK_EMAILS = 100
+      MAX_BULK_EMAILS = 1000
 
       # Validates an email address.
       #
