@@ -6,7 +6,11 @@ module Huefy
   #
   # @example
   #   client = Huefy::EmailClient.new(api_key: "your-api-key")
-  #   response = client.send_email("welcome", { "name" => "John" }, "john@example.com")
+  #   response = client.send_email(
+  #     template_key: "welcome",
+  #     data: { "name" => "John" },
+  #     recipient: "john@example.com"
+  #   )
   #   puts response.correlation_id
   #   client.close
   class EmailClient < Client
@@ -22,7 +26,7 @@ module Huefy
     # @param provider [String, nil] optional email provider (ses, sendgrid, mailgun, mailchimp)
     # @return [Models::SendEmailResponse]
     # @raise [HuefyError] if validation or the request fails
-    def send_email(template_key, data, recipient, provider: nil)
+    def send_email(template_key:, data:, recipient:, provider: nil)
       errors = Validators::EmailValidators.validate_send_email_input(template_key, data, recipient)
       unless errors.empty?
         raise HuefyError.new(
@@ -42,8 +46,8 @@ module Huefy
 
       request_obj = Models::SendEmailRequest.new(
         template_key: template_key,
-        recipient: recipient,
         data: data,
+        recipient: recipient,
         provider: provider
       )
 
@@ -55,11 +59,11 @@ module Huefy
     # Sends emails to multiple recipients using the bulk API.
     #
     # @param template_key [String] the template identifier
-    # @param recipients [Array<Models::BulkRecipient, Hash>] array of recipient objects
-    # @param options [Hash] optional additional parameters (from_email, from_name, provider_type, etc.)
+    # @param recipients [Array<Models::BulkRecipient>] array of recipient objects
+    # @param provider [String, nil] optional email provider (ses, sendgrid, mailgun, mailchimp)
     # @return [Models::SendBulkEmailsResponse]
-    # @raise [HuefyError] if bulk count validation fails
-    def send_bulk_emails(template_key:, recipients:, **options)
+    # @raise [HuefyError] if validation fails
+    def send_bulk_emails(template_key:, recipients:, provider: nil)
       count_err = Validators::EmailValidators.validate_bulk_count(recipients.length)
       if count_err
         raise HuefyError.new(count_err, code: ErrorCodes::VALIDATION_ERROR)
@@ -73,8 +77,6 @@ module Huefy
         end
       end
 
-      camel_options = options.transform_keys { |k| k.to_s.gsub(/_([a-z])/) { $1.upcase }.to_sym }
-
       body = {
         templateKey: template_key,
         recipients: recipients.map { |r|
@@ -84,9 +86,9 @@ module Huefy
             data: r.respond_to?(:data) ? r.data : r[:data]
           }
           entry.compact
-        },
-        **camel_options
+        }
       }
+      body[:providerType] = provider if provider
 
       response = @http_client.request("POST", SEND_BULK_EMAIL_PATH, body: body)
 
