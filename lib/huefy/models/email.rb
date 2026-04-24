@@ -17,13 +17,13 @@ module Huefy
       attr_reader :provider
 
       # @param template_key [String] the template identifier
-      # @param recipient [String] the recipient email address
       # @param data [Hash<String, String>] template merge data
+      # @param recipient [String] the recipient email address
       # @param provider [String, nil] optional email provider
-      def initialize(template_key:, recipient:, data:, provider: nil)
+      def initialize(template_key:, data:, recipient:, provider: nil)
         @template_key = template_key
-        @recipient = recipient
         @data = data
+        @recipient = recipient
         @provider = provider
       end
 
