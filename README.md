@@ -1,17 +1,17 @@
-# huefy-ruby
+# huefy
 
 Official Ruby SDK for [Huefy](https://huefy.dev) — transactional email delivery made simple.
 
 ## Installation
 
 ```bash
-gem install huefy-ruby
+gem install huefy
 ```
 
 Or add to your `Gemfile`:
 
 ```ruby
-gem 'huefy-ruby', '~> 1.0'
+gem 'huefy', '~> 1.0'
 ```
 
 Then:
@@ -22,7 +22,7 @@ bundle install
 
 ## Requirements
 
-- Ruby 3.1+
+- Ruby 3.0+
 
 ## Quick Start
 
@@ -140,7 +140,7 @@ end
 
 ## Local Development
 
-Set `HUEFY_MODE=local` to point the SDK at a local Huefy server, or override `base_url` in config:
+`HUEFY_MODE=local` resolves to `https://api.huefy.on/api/v1/sdk` in the current SDK. To target localhost, override `base_url` in config:
 
 ```ruby
 client = Huefy::Client.new(

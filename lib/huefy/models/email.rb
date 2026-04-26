@@ -142,10 +142,12 @@ module Huefy
       # @param hash [Hash] parsed API response
       # @return [HealthResponse]
       def self.from_hash(hash)
+        payload = hash["data"] || {}
+
         new(
-          status: hash["status"] || "",
-          timestamp: hash["timestamp"] || "",
-          version: hash["version"] || ""
+          status: payload["status"] || "",
+          timestamp: payload["timestamp"] || "",
+          version: payload["version"] || ""
         )
       end
 
@@ -153,7 +155,8 @@ module Huefy
       #
       # @return [Boolean]
       def healthy?
-        status.downcase == "ok"
+        normalized = status.downcase
+        normalized == "healthy" || normalized == "ok"
       end
     end
   end
