@@ -82,7 +82,7 @@ module Huefy
 
         # Apply +/-20% jitter: factor in [0.8, 1.2)
         jitter_factor = 0.8 + rand * 0.4
-        capped * jitter_factor
+        [capped * jitter_factor, @max_delay].min
       end
     end
   end

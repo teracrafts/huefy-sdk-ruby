@@ -70,6 +70,21 @@ RSpec.describe Huefy::EmailClient do
       expect(response.data.recipients.first.status).to eq("sent")
     end
 
+    it "accepts a recipient object" do
+      client = make_client(send_email_response)
+      response = client.send_email(
+        template_key: "welcome",
+        data: { "name" => "John" },
+        recipient: Huefy::Models::SendEmailRecipient.new(
+          email: "john@example.com",
+          type: "cc",
+          data: { "locale" => "en" }
+        )
+      )
+      expect(response.success).to be true
+      expect(response.data.recipients.first.email).to eq("john@example.com")
+    end
+
     it "raises HuefyError for empty template_key" do
       client = make_client(send_email_response)
       expect {

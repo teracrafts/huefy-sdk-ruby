@@ -22,24 +22,31 @@ bundle install
 
 ## Requirements
 
-- Ruby 3.0+
+- Runtime: Ruby 3.0+
+- Development toolchain: Ruby 4.0.3 and Bundler 4
+
+The gem itself still targets Ruby 3.0+ at runtime. The checked-in `Gemfile.lock` is maintained with Bundler `4.0.10`, and `.ruby-version` pins the contributor toolchain to Ruby `4.0.3`. On macOS, the default system Ruby is typically too old for that development workflow.
 
 ## Quick Start
 
 ```ruby
 require 'huefy'
 
-client = Huefy::Client.new(
-  config: Huefy::Config.new(api_key: 'sdk_your_api_key')
+client = Huefy::EmailClient.new(
+  api_key: 'sdk_your_api_key'
 )
 
 response = client.send_email(
   template_key: 'welcome-email',
-  recipient: { email: 'alice@example.com', name: 'Alice' },
-  variables: { first_name: 'Alice', trial_days: 14 }
+  recipient: Huefy::Models::SendEmailRecipient.new(
+    email: 'alice@example.com',
+    type: 'cc',
+    data: { locale: 'en' }
+  ),
+  data: { first_name: 'Alice', trial_days: '14' }
 )
 
-puts "Message ID: #{response.message_id}"
+puts "Message ID: #{response.data.email_id}"
 ```
 
 ## Key Features
@@ -74,10 +81,10 @@ puts "Message ID: #{response.message_id}"
 ### Rate Limit Callback
 
 ```ruby
-client = Huefy::Client.new(
-  config: Huefy::Config.new(api_key: 'sdk_your_api_key')
+client = Huefy::EmailClient.new(
+  api_key: 'sdk_your_api_key'
 ) do |info|
-  puts "Rate limit: #{info.remaining}/#{info.limit}, resets at #{info.reset}"
+  puts "Rate limit: #{info.remaining}/#{info.limit}, resets at #{info.reset_at}"
 end
 ```
 
@@ -85,13 +92,14 @@ end
 
 ```ruby
 results = client.send_bulk_emails(
-  emails: [
-    { template_key: 'promo', recipient: { email: 'bob@example.com' } },
-    { template_key: 'promo', recipient: { email: 'carol@example.com' } },
+  template_key: 'promo',
+  recipients: [
+    Huefy::Models::BulkRecipient.new(email: 'bob@example.com'),
+    Huefy::Models::BulkRecipient.new(email: 'carol@example.com'),
   ]
 )
 
-puts "Sent: #{results.total_sent}, Failed: #{results.total_failed}"
+puts "Sent: #{results.data.success_count}, Failed: #{results.data.failure_count}"
 ```
 
 ## Error Handling
@@ -102,19 +110,24 @@ require 'huefy'
 begin
   response = client.send_email(
     template_key: 'order-confirmation',
-    recipient: { email: 'user@example.com' }
+    recipient: 'user@example.com',
+    data: {}
   )
-  puts "Delivered: #{response.message_id}"
-rescue Huefy::AuthError
-  puts 'Invalid API key'
-rescue Huefy::RateLimitError => e
-  puts "Rate limited. Retry after #{e.retry_after}s"
-rescue Huefy::CircuitOpenError
-  puts 'Circuit open — service unavailable, backing off'
-rescue Huefy::NetworkError => e
-  puts "Network error: #{e.message}"
-rescue Huefy::Error => e
-  puts "Huefy error [#{e.code}]: #{e.message}"
+  puts "Delivered: #{response.data.email_id}"
+rescue Huefy::HuefyError => e
+  if [Huefy::ErrorCodes::AUTH_INVALID_KEY, Huefy::ErrorCodes::AUTH_MISSING_KEY, Huefy::ErrorCodes::AUTH_UNAUTHORIZED].include?(e.code)
+    puts 'Invalid API key'
+  elsif e.code == Huefy::ErrorCodes::NETWORK_RETRY_LIMIT
+    puts "Rate limited. Retry after #{e.retry_after}s"
+  elsif e.code == Huefy::ErrorCodes::CIRCUIT_OPEN
+    puts 'Circuit open — service unavailable, backing off'
+  elsif e.recoverable?
+    puts "Network error: #{e.message}"
+  else
+    puts "Huefy error [#{e.code}]: #{e.message}"
+  end
+rescue StandardError => e
+  puts "Unexpected error: #{e.message}"
 end
 ```
 
@@ -122,32 +135,28 @@ end
 
 | Class | Code | Meaning |
 |-------|------|---------|
-| `Huefy::InitError` | 1001 | Client failed to initialise |
-| `Huefy::AuthError` | 1102 | API key rejected |
-| `Huefy::NetworkError` | 1201 | Upstream request failed |
-| `Huefy::CircuitOpenError` | 1301 | Circuit breaker tripped |
-| `Huefy::RateLimitError` | 2003 | Rate limit exceeded |
-| `Huefy::TemplateMissingError` | 2005 | Template key not found |
+| `Huefy::HuefyError` | `AUTH_INVALID_KEY` / `AUTH_MISSING_KEY` / `AUTH_UNAUTHORIZED` | API key rejected |
+| `Huefy::HuefyError` | `NETWORK_RETRY_LIMIT` | Rate limit exceeded |
+| `Huefy::HuefyError` | `CIRCUIT_OPEN` | Circuit breaker tripped |
+| `Huefy::HuefyError` | `NETWORK_*`, `VALIDATION_ERROR`, `SECURITY_*` | Transport, validation, or security failure |
 
 ## Health Check
 
 ```ruby
 health = client.health_check
-unless health.status == 'healthy'
+unless health.healthy?
   warn "Huefy degraded: #{health.status}"
 end
 ```
 
 ## Local Development
 
-`HUEFY_MODE=local` resolves to `https://api.huefy.on/api/v1/sdk` in the current SDK. To target localhost, override `base_url` in config:
+`HUEFY_MODE=local` resolves to `https://api.huefy.on/api/v1/sdk`. To bypass Caddy and hit the raw app port directly, override `base_url` to `http://localhost:8080/api/v1/sdk`:
 
 ```ruby
-client = Huefy::Client.new(
-  config: Huefy::Config.new(
-    api_key: 'sdk_local_key',
-    base_url: 'http://localhost:3000/api/v1/sdk'
-  )
+client = Huefy::EmailClient.new(
+  api_key: 'sdk_local_key',
+  base_url: 'https://api.huefy.on/api/v1/sdk'
 )
 ```
 

@@ -5,6 +5,7 @@ module Huefy
     # Validation utilities for email-related inputs.
     module EmailValidators
       EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.freeze
+      VALID_RECIPIENT_TYPES = %w[to cc bcc].freeze
       MAX_EMAIL_LENGTH = 254
       MAX_TEMPLATE_KEY_LENGTH = 100
       MAX_BULK_EMAILS = 1000
@@ -60,12 +61,6 @@ module Huefy
           return "Template data must be a non-null hash"
         end
 
-        data.each do |key, value|
-          unless value.is_a?(String)
-            return "Template data value for key \"#{key}\" must be a string"
-          end
-        end
-
         nil
       end
 
@@ -89,7 +84,7 @@ module Huefy
       #
       # @param template_key [String]
       # @param data [Hash]
-      # @param recipient [String]
+      # @param recipient [String, Huefy::Models::SendEmailRecipient, Hash]
       # @return [Array<String>] array of error messages; empty if valid
       def self.validate_send_email_input(template_key, data, recipient)
         errors = []
@@ -97,9 +92,52 @@ module Huefy
         errors << key_err if key_err
         data_err = validate_email_data(data)
         errors << data_err if data_err
-        email_err = validate_email(recipient)
+        email_err = validate_recipient(recipient)
         errors << email_err if email_err
         errors
+      end
+
+      def self.validate_recipient(recipient)
+        case recipient
+        when String
+          validate_email(recipient)
+        when Huefy::Models::SendEmailRecipient
+          email_err = validate_email(recipient.email)
+          return email_err if email_err
+
+          type_err = validate_recipient_type(recipient.type)
+          return type_err if type_err
+
+          validate_recipient_data(recipient.data)
+        when Hash
+          email = recipient[:email] || recipient["email"]
+          email_err = validate_email(email)
+          return email_err if email_err
+
+          type_err = validate_recipient_type(recipient[:type] || recipient["type"])
+          return type_err if type_err
+
+          validate_recipient_data(recipient[:data] || recipient["data"])
+        else
+          "Recipient must be a string or recipient object"
+        end
+      end
+
+      def self.validate_recipient_type(recipient_type)
+        return nil if recipient_type.nil?
+        return "Recipient type must be one of: to, cc, bcc" unless recipient_type.is_a?(String)
+
+        normalized = recipient_type.strip.downcase
+        return nil if normalized.empty?
+        return nil if VALID_RECIPIENT_TYPES.include?(normalized)
+
+        "Recipient type must be one of: to, cc, bcc"
+      end
+
+      def self.validate_recipient_data(recipient_data)
+        return nil if recipient_data.nil? || recipient_data.is_a?(Hash)
+
+        "Recipient data must be an object"
       end
     end
   end

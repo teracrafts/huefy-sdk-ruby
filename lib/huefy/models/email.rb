@@ -7,18 +7,18 @@ module Huefy
       # @return [String] the template identifier
       attr_reader :template_key
 
-      # @return [String] the recipient email address
+      # @return [String, SendEmailRecipient, Hash] the recipient payload
       attr_reader :recipient
 
-      # @return [Hash<String, String>] template merge data
+      # @return [Hash<String, Object>] template merge data
       attr_reader :data
 
       # @return [String, nil] optional email provider
       attr_reader :provider
 
       # @param template_key [String] the template identifier
-      # @param data [Hash<String, String>] template merge data
-      # @param recipient [String] the recipient email address
+      # @param data [Hash<String, Object>] template merge data
+      # @param recipient [String, SendEmailRecipient, Hash] the recipient email or recipient object
       # @param provider [String, nil] optional email provider
       def initialize(template_key:, data:, recipient:, provider: nil)
         @template_key = template_key
@@ -33,11 +33,48 @@ module Huefy
       def to_h
         result = {
           "templateKey" => @template_key,
-          "recipient" => @recipient,
+          "recipient" => serialize_recipient(@recipient),
           "data" => @data
         }
         result["providerType"] = @provider unless @provider.nil?
         result
+      end
+
+      private
+
+      def serialize_recipient(recipient)
+        case recipient
+        when String
+          recipient.strip
+        when SendEmailRecipient
+          recipient.to_h
+        when Hash
+          normalized = recipient.transform_keys(&:to_s)
+          normalized["email"] = normalized["email"]&.strip if normalized["email"].is_a?(String)
+          normalized["type"] = normalized["type"]&.strip&.downcase if normalized["type"].is_a?(String)
+          normalized
+        else
+          recipient
+        end
+      end
+    end
+
+    # Represents the expanded recipient object accepted by the send-email API.
+    class SendEmailRecipient
+      attr_reader :email, :type, :data
+
+      def initialize(email:, type: nil, data: nil)
+        @email = email
+        @type = type
+        @data = data
+      end
+
+      def to_h
+        {
+          "email" => email.strip,
+          "type" => type&.strip&.downcase,
+          "data" => data
+        }.compact
       end
     end
 
@@ -86,8 +123,9 @@ module Huefy
 
     # Represents the data payload in a send-bulk-emails response.
     SendBulkEmailsResponseData = Struct.new(
-      :batch_id, :status, :template_key, :total_recipients,
-      :success_count, :failure_count, :suppressed_count, :started_at, :recipients,
+      :batch_id, :status, :template_key, :template_version, :sender_used, :sender_verified,
+      :total_recipients, :processed_count, :success_count, :failure_count, :suppressed_count,
+      :started_at, :completed_at, :recipients, :errors, :metadata,
       keyword_init: true
     ) do
       def self.from_hash(hash)
@@ -96,12 +134,19 @@ module Huefy
           batch_id: hash["batchId"] || "",
           status: hash["status"] || "",
           template_key: hash["templateKey"] || "",
+          template_version: hash["templateVersion"] || 0,
+          sender_used: hash["senderUsed"] || "",
+          sender_verified: hash["senderVerified"] || false,
           total_recipients: hash["totalRecipients"] || 0,
+          processed_count: hash["processedCount"] || 0,
           success_count: hash["successCount"] || 0,
           failure_count: hash["failureCount"] || 0,
           suppressed_count: hash["suppressedCount"] || 0,
           started_at: hash["startedAt"] || "",
-          recipients: recipients
+          completed_at: hash["completedAt"],
+          recipients: recipients,
+          errors: hash["errors"] || [],
+          metadata: hash["metadata"]
         )
       end
     end

@@ -9,7 +9,7 @@ module Huefy
   #   response = client.send_email(
   #     template_key: "welcome",
   #     data: { "name" => "John" },
-  #     recipient: "john@example.com"
+  #     recipient: Huefy::Models::SendEmailRecipient.new(email: "john@example.com", type: "cc")
   #   )
   #   puts response.correlation_id
   #   client.close
@@ -21,8 +21,8 @@ module Huefy
     # Sends a single email using the Huefy API.
     #
     # @param template_key [String] the template identifier
-    # @param data [Hash<String, String>] template merge data
-    # @param recipient [String] the recipient email address
+    # @param data [Hash<String, Object>] template merge data
+    # @param recipient [String, Models::SendEmailRecipient, Hash] the recipient email or recipient object
     # @param provider [String, nil] optional email provider (ses, sendgrid, mailgun, mailchimp)
     # @return [Models::SendEmailResponse]
     # @raise [HuefyError] if validation or the request fails
@@ -43,6 +43,7 @@ module Huefy
       end
 
       Security.warn_if_potential_pii(data, "email template")
+      warn_if_potential_recipient_pii(recipient)
 
       request_obj = Models::SendEmailRequest.new(
         template_key: template_key,
@@ -102,6 +103,22 @@ module Huefy
     def email_health_check
       response = @http_client.request("GET", HEALTH_PATH)
       Models::HealthResponse.from_hash(response)
+    end
+
+    private
+
+    def warn_if_potential_recipient_pii(recipient)
+      recipient_data =
+        case recipient
+        when Models::SendEmailRecipient
+          recipient.data
+        when Hash
+          recipient[:data] || recipient["data"]
+        end
+
+      return unless recipient_data.is_a?(Hash)
+
+      Security.warn_if_potential_pii(recipient_data, "recipient data")
     end
   end
 end

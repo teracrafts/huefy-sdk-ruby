@@ -85,14 +85,12 @@ RSpec.describe Huefy::Validators::EmailValidators do
       expect(result).to include("non-null hash")
     end
 
-    it "rejects non-string values" do
-      result = described_class.validate_email_data({ "count" => 5 })
-      expect(result).to include("must be a string")
+    it "accepts numeric values" do
+      expect(described_class.validate_email_data({ "count" => 5 })).to be_nil
     end
 
-    it "rejects array values" do
-      result = described_class.validate_email_data({ "items" => %w[a b] })
-      expect(result).to include("must be a string")
+    it "accepts array values" do
+      expect(described_class.validate_email_data({ "items" => %w[a b] })).to be_nil
     end
   end
 
@@ -101,8 +99,8 @@ RSpec.describe Huefy::Validators::EmailValidators do
       expect(described_class.validate_bulk_count(10)).to be_nil
     end
 
-    it "accepts exactly 100" do
-      expect(described_class.validate_bulk_count(100)).to be_nil
+    it "accepts exactly 1000" do
+      expect(described_class.validate_bulk_count(1000)).to be_nil
     end
 
     it "rejects zero" do
@@ -115,15 +113,24 @@ RSpec.describe Huefy::Validators::EmailValidators do
       expect(result).to include("At least one")
     end
 
-    it "rejects over 100" do
-      result = described_class.validate_bulk_count(101)
-      expect(result).to include("Maximum of 100")
+    it "rejects over 1000" do
+      result = described_class.validate_bulk_count(1001)
+      expect(result).to include("Maximum of 1000")
     end
   end
 
   describe ".validate_send_email_input" do
     it "returns empty array for valid input" do
       errors = described_class.validate_send_email_input("tpl", { "name" => "John" }, "user@test.com")
+      expect(errors).to be_empty
+    end
+
+    it "accepts a recipient object" do
+      errors = described_class.validate_send_email_input(
+        "tpl",
+        { "name" => "John" },
+        Huefy::Models::SendEmailRecipient.new(email: "user@test.com", type: "bcc", data: { "locale" => "en" })
+      )
       expect(errors).to be_empty
     end
 
@@ -135,6 +142,25 @@ RSpec.describe Huefy::Validators::EmailValidators do
     it "returns a single error for one invalid field" do
       errors = described_class.validate_send_email_input("tpl", { "name" => "John" }, "bad")
       expect(errors.length).to eq(1)
+    end
+
+    it "rejects an invalid recipient object email" do
+      errors = described_class.validate_send_email_input(
+        "tpl",
+        { "name" => "John" },
+        Huefy::Models::SendEmailRecipient.new(email: "bad")
+      )
+      expect(errors.length).to eq(1)
+    end
+
+    it "rejects an invalid recipient object type" do
+      errors = described_class.validate_send_email_input(
+        "tpl",
+        { "name" => "John" },
+        Huefy::Models::SendEmailRecipient.new(email: "user@test.com", type: "reply-to")
+      )
+      expect(errors.length).to eq(1)
+      expect(errors.first).to include("Recipient type")
     end
   end
 end
