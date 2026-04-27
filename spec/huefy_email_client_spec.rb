@@ -146,5 +146,25 @@ RSpec.describe Huefy::EmailClient do
         )
       }.to raise_error(Huefy::HuefyError)
     end
+
+    it "raises HuefyError when template_key is blank" do
+      client = make_client(bulk_response)
+      expect {
+        client.send_bulk_emails(
+          template_key: "   ",
+          recipients: [Huefy::Models::BulkRecipient.new(email: "alice@example.com")]
+        )
+      }.to raise_error(Huefy::HuefyError)
+    end
+
+    it "raises HuefyError when a recipient type is invalid" do
+      client = make_client(bulk_response)
+      expect {
+        client.send_bulk_emails(
+          template_key: "welcome",
+          recipients: [Huefy::Models::BulkRecipient.new(email: "alice@example.com", type: "reply-to")]
+        )
+      }.to raise_error(Huefy::HuefyError)
+    end
   end
 end

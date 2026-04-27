@@ -123,6 +123,32 @@ module Huefy
         end
       end
 
+      def self.validate_bulk_recipient(recipient)
+        case recipient
+        when Models::BulkRecipient
+          email_err = validate_email(recipient.email)
+          return email_err if email_err
+
+          type_err = validate_recipient_type(recipient.type)
+          return type_err if type_err
+
+          validate_recipient_data(recipient.data)
+        when Hash
+          email = recipient[:email] || recipient["email"]
+          return "Recipient email is required" unless email.is_a?(String)
+
+          email_err = validate_email(email)
+          return email_err if email_err
+
+          type_err = validate_recipient_type(recipient[:type] || recipient["type"])
+          return type_err if type_err
+
+          validate_recipient_data(recipient[:data] || recipient["data"])
+        else
+          "Recipient must be a BulkRecipient"
+        end
+      end
+
       def self.validate_recipient_type(recipient_type)
         return nil if recipient_type.nil?
         return "Recipient type must be one of: to, cc, bcc" unless recipient_type.is_a?(String)

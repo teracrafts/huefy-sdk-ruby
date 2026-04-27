@@ -70,20 +70,24 @@ module Huefy
         raise HuefyError.new(count_err, code: ErrorCodes::VALIDATION_ERROR)
       end
 
+      template_err = Validators::EmailValidators.validate_template_key(template_key)
+      if template_err
+        raise HuefyError.new(template_err, code: ErrorCodes::VALIDATION_ERROR)
+      end
+
       recipients.each_with_index do |r, i|
-        email = r.respond_to?(:email) ? r.email : r[:email]
-        email_err = Validators::EmailValidators.validate_email(email)
-        if email_err
-          raise HuefyError.new("recipients[#{i}]: #{email_err}", code: ErrorCodes::VALIDATION_ERROR)
+        recipient_err = Validators::EmailValidators.validate_bulk_recipient(r)
+        if recipient_err
+          raise HuefyError.new("recipients[#{i}]: #{recipient_err}", code: ErrorCodes::VALIDATION_ERROR)
         end
       end
 
       body = {
-        templateKey: template_key,
+        templateKey: template_key.strip,
         recipients: recipients.map { |r|
           entry = {
-            email: r.respond_to?(:email) ? r.email : r[:email],
-            type: (r.respond_to?(:type) ? r.type : r[:type]) || "to",
+            email: (r.respond_to?(:email) ? r.email : r[:email]).strip,
+            type: (((r.respond_to?(:type) ? r.type : r[:type]) || "to").strip.downcase),
             data: r.respond_to?(:data) ? r.data : r[:data]
           }
           entry.compact
