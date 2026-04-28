@@ -3,6 +3,13 @@
 require "spec_helper"
 
 RSpec.describe Teracrafts::Huefy::EmailClient do
+  it "uses Teracrafts::Huefy as the canonical class namespace while preserving Huefy compatibility" do
+    expect(Teracrafts::Huefy::Client.name).to eq("Teracrafts::Huefy::Client")
+    expect(Huefy::Client).to be(Teracrafts::Huefy::Client)
+    expect(Teracrafts::Huefy::EmailClient.name).to eq("Teracrafts::Huefy::EmailClient")
+    expect(Huefy::EmailClient).to be(Teracrafts::Huefy::EmailClient)
+  end
+
   let(:send_email_response) do
     {
       "success" => true,

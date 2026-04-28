@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-module Huefy
-  # Email-specific client that extends the base Client with email domain
+module Teracrafts
+  module Huefy
+    # Email-specific client that extends the base Client with email domain
   # operations.
   #
   # @example
@@ -13,7 +14,7 @@ module Huefy
   #   )
   #   puts response.correlation_id
   #   client.close
-  class EmailClient < Client
+    class EmailClient < Client
     SEND_EMAIL_PATH = "/emails/send"
     SEND_BULK_EMAIL_PATH = "/emails/send-bulk"
     HEALTH_PATH = "/health"
@@ -123,6 +124,7 @@ module Huefy
       return unless recipient_data.is_a?(Hash)
 
       Security.warn_if_potential_pii(recipient_data, "recipient data")
+    end
     end
   end
 end

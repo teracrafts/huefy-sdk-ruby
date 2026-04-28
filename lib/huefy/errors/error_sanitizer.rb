@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-module Huefy
-  # Error message sanitizer that strips sensitive data before it leaves the SDK.
+module Teracrafts
+  module Huefy
+    # Error message sanitizer that strips sensitive data before it leaves the SDK.
   #
   # Matches common patterns (file paths, IP addresses, API keys, email
   # addresses, database connection strings) and replaces them with safe
   # placeholder tokens.
-  module ErrorSanitizer
+    module ErrorSanitizer
     # Configuration controlling which patterns are sanitized.
     Config = Struct.new(:enabled, :preserve_original, keyword_init: true) do
       def initialize(enabled: true, preserve_original: false)
@@ -101,6 +102,7 @@ module Huefy
         end
         result
       end
+    end
     end
   end
 end

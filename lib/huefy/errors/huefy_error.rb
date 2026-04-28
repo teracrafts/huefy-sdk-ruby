@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-module Huefy
-  # The primary error class raised by the Huefy Ruby SDK.
+module Teracrafts
+  module Huefy
+    # The primary error class raised by the Huefy Ruby SDK.
   #
   # Carries structured information about the error including its category,
   # recoverability, and optional details.
-  class HuefyError < StandardError
+    class HuefyError < StandardError
     # @return [String] the categorized error code
     attr_reader :code
 
@@ -145,6 +146,7 @@ module Huefy
       else
         new(body || "HTTP #{status_code}", code: ErrorCodes::NETWORK_ERROR, status_code: status_code, request_id: request_id)
       end
+    end
     end
   end
 end

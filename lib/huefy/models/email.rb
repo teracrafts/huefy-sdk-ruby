@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-module Huefy
-  module Models
+module Teracrafts
+  module Huefy
+    module Models
     # Represents a request to send a single email.
-    class SendEmailRequest
+      class SendEmailRequest
       # @return [String] the template identifier
       attr_reader :template_key
 
@@ -60,7 +61,7 @@ module Huefy
     end
 
     # Represents the expanded recipient object accepted by the send-email API.
-    class SendEmailRecipient
+      class SendEmailRecipient
       attr_reader :email, :type, :data
 
       def initialize(email:, type: nil, data: nil)
@@ -79,7 +80,7 @@ module Huefy
     end
 
     # Represents the per-recipient status in a send-email response.
-    RecipientStatus = Struct.new(:email, :status, :message_id, :error, :sent_at, keyword_init: true) do
+      RecipientStatus = Struct.new(:email, :status, :message_id, :error, :sent_at, keyword_init: true) do
       def self.from_hash(hash)
         new(
           email: hash["email"] || "",
@@ -92,7 +93,7 @@ module Huefy
     end
 
     # Represents the data payload in a send-email response.
-    SendEmailResponseData = Struct.new(:email_id, :status, :recipients, keyword_init: true) do
+      SendEmailResponseData = Struct.new(:email_id, :status, :recipients, keyword_init: true) do
       def self.from_hash(hash)
         recipients = (hash["recipients"] || []).map { |r| RecipientStatus.from_hash(r) }
         new(
@@ -104,7 +105,7 @@ module Huefy
     end
 
     # Represents the response from sending a single email.
-    SendEmailResponse = Struct.new(:success, :data, :correlation_id, keyword_init: true) do
+      SendEmailResponse = Struct.new(:success, :data, :correlation_id, keyword_init: true) do
       def self.from_hash(hash)
         new(
           success: hash["success"] || false,
@@ -115,14 +116,14 @@ module Huefy
     end
 
     # Represents a recipient entry in a bulk email request.
-    BulkRecipient = Struct.new(:email, :type, :data, keyword_init: true) do
+      BulkRecipient = Struct.new(:email, :type, :data, keyword_init: true) do
       def initialize(email:, type: "to", data: nil)
         super(email: email, type: type, data: data)
       end
     end
 
     # Represents the data payload in a send-bulk-emails response.
-    SendBulkEmailsResponseData = Struct.new(
+      SendBulkEmailsResponseData = Struct.new(
       :batch_id, :status, :template_key, :template_version, :sender_used, :sender_verified,
       :total_recipients, :processed_count, :success_count, :failure_count, :suppressed_count,
       :started_at, :completed_at, :recipients, :errors, :metadata,
@@ -152,7 +153,7 @@ module Huefy
     end
 
     # Represents the response from sending bulk emails.
-    SendBulkEmailsResponse = Struct.new(:success, :data, :correlation_id, keyword_init: true) do
+      SendBulkEmailsResponse = Struct.new(:success, :data, :correlation_id, keyword_init: true) do
       def self.from_hash(hash)
         new(
           success: hash["success"] || false,
@@ -163,7 +164,7 @@ module Huefy
     end
 
     # Represents the API health check response.
-    class HealthResponse
+      class HealthResponse
       # @return [String] the health status
       attr_reader :status
 
@@ -202,6 +203,7 @@ module Huefy
       def healthy?
         normalized = status.downcase
         normalized == "healthy" || normalized == "ok"
+      end
       end
     end
   end

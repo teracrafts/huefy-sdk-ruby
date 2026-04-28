@@ -1,39 +1,40 @@
 # frozen_string_literal: true
 
-module Huefy
-  # Default production base URL.
-  DEFAULT_BASE_URL = "https://api.huefy.dev/api/v1/sdk"
+module Teracrafts
+  module Huefy
+    # Default production base URL.
+    DEFAULT_BASE_URL = "https://api.huefy.dev/api/v1/sdk"
 
-  # Base URL used when running in local development mode.
-  LOCAL_BASE_URL = "https://api.huefy.on/api/v1/sdk"
+    # Base URL used when running in local development mode.
+    LOCAL_BASE_URL = "https://api.huefy.on/api/v1/sdk"
 
-  # Default retry configuration.
-  DEFAULT_RETRY_CONFIG = {
-    max_retries: 3,
-    base_delay: 1.0,
-    max_delay: 30.0,
-    retryable_status_codes: [408, 429, 500, 502, 503, 504]
-  }.freeze
+    # Default retry configuration.
+    DEFAULT_RETRY_CONFIG = {
+      max_retries: 3,
+      base_delay: 1.0,
+      max_delay: 30.0,
+      retryable_status_codes: [408, 429, 500, 502, 503, 504]
+    }.freeze
 
-  # Default circuit breaker configuration.
-  DEFAULT_CIRCUIT_BREAKER_CONFIG = {
-    failure_threshold: 5,
-    reset_timeout: 30.0,
-    half_open_requests: 1
-  }.freeze
+    # Default circuit breaker configuration.
+    DEFAULT_CIRCUIT_BREAKER_CONFIG = {
+      failure_threshold: 5,
+      reset_timeout: 30.0,
+      half_open_requests: 1
+    }.freeze
 
-  # Resolves the base URL by checking the HUEFY_MODE environment
-  # variable. Returns {LOCAL_BASE_URL} when the value is "local"; otherwise
-  # returns {DEFAULT_BASE_URL}.
-  #
-  # @return [String] the resolved base URL
-  def self.resolve_base_url
-    mode = ENV["HUEFY_MODE"]
-    mode == "local" ? LOCAL_BASE_URL : DEFAULT_BASE_URL
-  end
+    # Resolves the base URL by checking the HUEFY_MODE environment
+    # variable. Returns {LOCAL_BASE_URL} when the value is "local"; otherwise
+    # returns {DEFAULT_BASE_URL}.
+    #
+    # @return [String] the resolved base URL
+    def self.resolve_base_url
+      mode = ENV["HUEFY_MODE"]
+      mode == "local" ? LOCAL_BASE_URL : DEFAULT_BASE_URL
+    end
 
-  # Configuration for the Huefy client.
-  class Config
+    # Configuration for the Huefy client.
+    class Config
     # @return [String] the API key for authentication
     attr_reader :api_key
 
@@ -87,7 +88,7 @@ module Huefy
       on_rate_limit_warning: nil
     )
       @api_key = api_key
-      @base_url = (base_url || Huefy.resolve_base_url).chomp("/")
+      @base_url = (base_url || Teracrafts::Huefy.resolve_base_url).chomp("/")
       @timeout = timeout
       @retry_config = DEFAULT_RETRY_CONFIG.merge(retry_config)
       @circuit_breaker_config = DEFAULT_CIRCUIT_BREAKER_CONFIG.merge(circuit_breaker_config)
@@ -107,6 +108,7 @@ module Huefy
       raise ArgumentError, "max_delay must be >= base_delay" unless @retry_config[:max_delay] >= @retry_config[:base_delay]
       raise ArgumentError, "reset_timeout must be > 0" unless @circuit_breaker_config[:reset_timeout].positive?
       raise ArgumentError, "failure_threshold must be >= 1" unless @circuit_breaker_config[:failure_threshold] >= 1
+    end
     end
   end
 end

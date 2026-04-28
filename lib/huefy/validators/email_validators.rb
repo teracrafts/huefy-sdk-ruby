@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-module Huefy
-  module Validators
+module Teracrafts
+  module Huefy
+    module Validators
     # Validation utilities for email-related inputs.
-    module EmailValidators
+      module EmailValidators
       EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.freeze
       VALID_RECIPIENT_TYPES = %w[to cc bcc].freeze
       MAX_EMAIL_LENGTH = 254
@@ -164,6 +165,7 @@ module Huefy
         return nil if recipient_data.nil? || recipient_data.is_a?(Hash)
 
         "Recipient data must be an object"
+      end
       end
     end
   end

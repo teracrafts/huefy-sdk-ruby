@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-module Huefy
-  # Main client for the Huefy Ruby SDK.
+module Teracrafts
+  module Huefy
+    # Main client for the Huefy Ruby SDK.
   #
   # Create an instance with an API key and use it to interact with the
   # Huefy API.
@@ -11,7 +12,7 @@ module Huefy
   #   health = client.health_check
   #   puts health["status"]
   #   client.close
-  class Client
+    class Client
     # @return [Config] the current client configuration
     attr_reader :config
 
@@ -83,6 +84,7 @@ module Huefy
     # Call this when the client is no longer needed.
     def close
       @http_client.close
+    end
     end
   end
 end

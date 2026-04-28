@@ -4,14 +4,15 @@ require "faraday"
 require "json"
 require "time"
 
-module Huefy
-  module Http
+module Teracrafts
+  module Huefy
+    module Http
     # Carries parsed rate-limit header values from an API response.
-    RateLimitInfo = Struct.new(:limit, :remaining, :reset_at, keyword_init: true)
+      RateLimitInfo = Struct.new(:limit, :remaining, :reset_at, keyword_init: true)
 
     # Internal HTTP client that wraps Faraday with retry logic and circuit
     # breaking for the Huefy Ruby SDK.
-    class HttpClient
+      class HttpClient
       # @param api_key [String] the API key for authentication
       # @param config [Config] the client configuration
       def initialize(api_key, config)
@@ -25,8 +26,8 @@ module Huefy
           f.options.open_timeout = config.timeout
           f.headers["Content-Type"] = "application/json"
           f.headers["Accept"] = "application/json"
-          f.headers["X-SDK-Version"] = Huefy::VERSION
-          f.headers["User-Agent"] = "huefy-ruby/#{Huefy::VERSION}"
+          f.headers["X-SDK-Version"] = Teracrafts::Huefy::VERSION
+          f.headers["User-Agent"] = "huefy-ruby/#{Teracrafts::Huefy::VERSION}"
           f.headers["X-API-Key"] = api_key
           f.adapter Faraday.default_adapter
         end
@@ -146,6 +147,7 @@ module Huefy
         if limit > 0 && remaining < (limit * 0.2)
           @config.on_rate_limit_warning&.call(info)
         end
+      end
       end
     end
   end

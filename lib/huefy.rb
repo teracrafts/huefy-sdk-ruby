@@ -26,9 +26,9 @@ require_relative "huefy/huefy_email_client"
 #   health = client.health_check
 #   puts health["status"]
 #   client.close
-module Huefy
+module Teracrafts
+  module Huefy
+  end
 end
 
-module Teracrafts
-  Huefy = ::Huefy unless const_defined?(:Huefy, false)
-end
+Huefy = Teracrafts::Huefy unless defined?(::Huefy)

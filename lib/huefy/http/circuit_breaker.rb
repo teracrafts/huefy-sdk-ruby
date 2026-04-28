@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-module Huefy
-  module Http
+module Teracrafts
+  module Huefy
+    module Http
     # Thread-safe circuit breaker implementing the standard three-state
     # pattern (closed, open, half-open).
     #
@@ -12,7 +13,7 @@ module Huefy
     #   to half-open.
     # - **HALF_OPEN** -- a limited number of probe requests are allowed through.
     #   Success closes the circuit; failure re-opens it.
-    class CircuitBreaker
+      class CircuitBreaker
       # Possible circuit states.
       CLOSED    = :closed
       OPEN      = :open
@@ -177,6 +178,7 @@ module Huefy
           transition_to(HALF_OPEN)
           @half_open_attempts = 0
         end
+      end
       end
     end
   end

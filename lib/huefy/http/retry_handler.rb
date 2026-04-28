@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-module Huefy
-  module Http
+module Teracrafts
+  module Huefy
+    module Http
     # Handles retry logic with exponential backoff and jitter for the
     # Huefy Ruby SDK.
-    class RetryHandler
+      class RetryHandler
       # @param config [Hash] retry configuration
       # @option config [Integer] :max_retries maximum retry attempts (default: 3)
       # @option config [Float] :base_delay base delay in seconds (default: 0.5)
@@ -83,6 +84,7 @@ module Huefy
         # Apply +/-20% jitter: factor in [0.8, 1.2)
         jitter_factor = 0.8 + rand * 0.4
         [capped * jitter_factor, @max_delay].min
+      end
       end
     end
   end

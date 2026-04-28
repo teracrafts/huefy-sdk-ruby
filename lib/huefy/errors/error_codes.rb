@@ -2,13 +2,14 @@
 
 require "set"
 
-module Huefy
-  # Canonical error codes used throughout the Huefy Ruby SDK.
+module Teracrafts
+  module Huefy
+    # Canonical error codes used throughout the Huefy Ruby SDK.
   #
   # Each constant carries a human-readable string value for serialization and
   # logging. A companion numeric code map is provided for systems that require
   # integer identifiers.
-  module ErrorCodes
+    module ErrorCodes
     # Initialization
     INIT_FAILED  = "INIT_FAILED"
     INIT_TIMEOUT = "INIT_TIMEOUT"
@@ -83,6 +84,7 @@ module Huefy
     # @return [Boolean]
     def self.recoverable?(code)
       RECOVERABLE_CODES.include?(code)
+    end
     end
   end
 end

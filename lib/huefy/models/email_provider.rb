@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-module Huefy
-  module Models
-    module EmailProvider
+module Teracrafts
+  module Huefy
+    module Models
+      module EmailProvider
       SES = "ses"
       SENDGRID = "sendgrid"
       MAILGUN = "mailgun"
@@ -11,6 +12,7 @@ module Huefy
 
       def self.valid?(provider)
         ALL.include?(provider)
+      end
       end
     end
   end

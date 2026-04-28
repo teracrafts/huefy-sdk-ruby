@@ -3,11 +3,12 @@
 require "openssl"
 require "json"
 
-module Huefy
-  # Security utilities for the Huefy Ruby SDK.
+module Teracrafts
+  module Huefy
+    # Security utilities for the Huefy Ruby SDK.
   #
   # Provides PII detection, HMAC-SHA256 signing, and key classification helpers.
-  module Security
+    module Security
     # Field name patterns that commonly indicate PII.
     PII_PATTERNS = %w[
       email phone telephone mobile
@@ -221,5 +222,6 @@ module Huefy
     end
 
     private_class_method :normalize, :secure_compare
+    end
   end
 end
