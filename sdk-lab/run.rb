@@ -26,7 +26,7 @@ puts
 
 # 1. Initialization
 begin
-  client = Huefy::Client.new(api_key: "sdk_lab_test_key")
+  client = Teracrafts::Huefy::Client.new(api_key: "sdk_lab_test_key")
   pass("Initialization")
 rescue => e
   fail_test("Initialization", e.message)
@@ -35,9 +35,9 @@ end
 
 # 2. Config validation
 begin
-  Huefy::Client.new(api_key: "")
+  Teracrafts::Huefy::Client.new(api_key: "")
   fail_test("Config validation", "expected error for empty API key, got none")
-rescue Huefy::HuefyError
+rescue Teracrafts::Huefy::HuefyError
   pass("Config validation")
 rescue => e
   pass("Config validation") # any error on empty key is acceptable
@@ -45,7 +45,7 @@ end
 
 # 3. HMAC signing
 begin
-  signed = Huefy::Security.sign_payload({ "test" => "data" }, "test_secret", timestamp: 1700000000)
+  signed = Teracrafts::Huefy::Security.sign_payload({ "test" => "data" }, "test_secret", timestamp: 1700000000)
   if signed.signature.length == 64
     pass("HMAC signing")
   else
@@ -58,7 +58,7 @@ end
 # 4. Error sanitization
 begin
   raw = "Error at 192.168.1.1 for user@example.com"
-  sanitized = Huefy::ErrorSanitizer.sanitize(raw)
+  sanitized = Teracrafts::Huefy::ErrorSanitizer.sanitize(raw)
   if sanitized.include?("192.168.1.1") || sanitized.include?("user@example.com")
     fail_test("Error sanitization", "IP or email still present after sanitization")
   else
@@ -71,7 +71,7 @@ end
 # 5. PII detection
 begin
   data = { "email" => "t@t.com", "name" => "John", "ssn" => "123-45-6789" }
-  detections = Huefy::Security.detect_potential_pii(data)
+  detections = Teracrafts::Huefy::Security.detect_potential_pii(data)
   fields = detections.map(&:field)
   if detections.empty? || !fields.include?("email") || !fields.include?("ssn")
     fail_test("PII detection", "expected email and ssn fields, got: #{fields.inspect}")
@@ -84,8 +84,8 @@ end
 
 # 6. Circuit breaker state
 begin
-  cb = Huefy::Http::CircuitBreaker.new
-  if cb.state == Huefy::Http::CircuitBreaker::CLOSED
+  cb = Teracrafts::Huefy::Http::CircuitBreaker.new
+  if cb.state == Teracrafts::Huefy::Http::CircuitBreaker::CLOSED
     pass("Circuit breaker state")
   else
     fail_test("Circuit breaker state", "expected CLOSED, got #{cb.state}")

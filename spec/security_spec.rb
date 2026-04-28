@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Huefy::Security do
+RSpec.describe Teracrafts::Huefy::Security do
   describe ".potential_pii_field?" do
     %w[email phone ssn credit_card password].each do |field|
       it "detects '#{field}' as potential PII" do

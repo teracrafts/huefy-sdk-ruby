@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Huefy::Validators::EmailValidators do
+RSpec.describe Teracrafts::Huefy::Validators::EmailValidators do
   describe ".validate_email" do
     it "accepts a valid email" do
       expect(described_class.validate_email("user@example.com")).to be_nil
@@ -129,7 +129,7 @@ RSpec.describe Huefy::Validators::EmailValidators do
       errors = described_class.validate_send_email_input(
         "tpl",
         { "name" => "John" },
-        Huefy::Models::SendEmailRecipient.new(email: "user@test.com", type: "bcc", data: { "locale" => "en" })
+        Teracrafts::Huefy::Models::SendEmailRecipient.new(email: "user@test.com", type: "bcc", data: { "locale" => "en" })
       )
       expect(errors).to be_empty
     end
@@ -148,7 +148,7 @@ RSpec.describe Huefy::Validators::EmailValidators do
       errors = described_class.validate_send_email_input(
         "tpl",
         { "name" => "John" },
-        Huefy::Models::SendEmailRecipient.new(email: "bad")
+        Teracrafts::Huefy::Models::SendEmailRecipient.new(email: "bad")
       )
       expect(errors.length).to eq(1)
     end
@@ -157,7 +157,7 @@ RSpec.describe Huefy::Validators::EmailValidators do
       errors = described_class.validate_send_email_input(
         "tpl",
         { "name" => "John" },
-        Huefy::Models::SendEmailRecipient.new(email: "user@test.com", type: "reply-to")
+        Teracrafts::Huefy::Models::SendEmailRecipient.new(email: "user@test.com", type: "reply-to")
       )
       expect(errors.length).to eq(1)
       expect(errors.first).to include("Recipient type")

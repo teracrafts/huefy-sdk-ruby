@@ -7,7 +7,7 @@ module Huefy
   # Huefy API.
   #
   # @example
-  #   client = Huefy::Client.new(api_key: "your-api-key")
+  #   client = Teracrafts::Huefy::Client.new(api_key: "your-api-key")
   #   health = client.health_check
   #   puts health["status"]
   #   client.close

@@ -30,15 +30,15 @@ The gem itself still targets Ruby 3.0+ at runtime. The checked-in `Gemfile.lock`
 ## Quick Start
 
 ```ruby
-require 'huefy'
+require "teracrafts/huefy"
 
-client = Huefy::EmailClient.new(
+client = Teracrafts::Huefy::EmailClient.new(
   api_key: 'sdk_your_api_key'
 )
 
 response = client.send_email(
   template_key: 'welcome-email',
-  recipient: Huefy::Models::SendEmailRecipient.new(
+  recipient: Teracrafts::Huefy::Models::SendEmailRecipient.new(
     email: 'alice@example.com',
     type: 'cc',
     data: { locale: 'en' }
@@ -81,7 +81,7 @@ puts "Message ID: #{response.data.email_id}"
 ### Rate Limit Callback
 
 ```ruby
-client = Huefy::EmailClient.new(
+client = Teracrafts::Huefy::EmailClient.new(
   api_key: 'sdk_your_api_key'
 ) do |info|
   puts "Rate limit: #{info.remaining}/#{info.limit}, resets at #{info.reset_at}"
@@ -94,8 +94,8 @@ end
 results = client.send_bulk_emails(
   template_key: 'promo',
   recipients: [
-    Huefy::Models::BulkRecipient.new(email: 'bob@example.com'),
-    Huefy::Models::BulkRecipient.new(email: 'carol@example.com'),
+    Teracrafts::Huefy::Models::BulkRecipient.new(email: 'bob@example.com'),
+    Teracrafts::Huefy::Models::BulkRecipient.new(email: 'carol@example.com'),
   ]
 )
 
@@ -105,7 +105,7 @@ puts "Sent: #{results.data.success_count}, Failed: #{results.data.failure_count}
 ## Error Handling
 
 ```ruby
-require 'huefy'
+require "teracrafts/huefy"
 
 begin
   response = client.send_email(
@@ -114,12 +114,12 @@ begin
     data: {}
   )
   puts "Delivered: #{response.data.email_id}"
-rescue Huefy::HuefyError => e
-  if [Huefy::ErrorCodes::AUTH_INVALID_KEY, Huefy::ErrorCodes::AUTH_MISSING_KEY, Huefy::ErrorCodes::AUTH_UNAUTHORIZED].include?(e.code)
+rescue Teracrafts::Huefy::HuefyError => e
+  if [Teracrafts::Huefy::ErrorCodes::AUTH_INVALID_KEY, Teracrafts::Huefy::ErrorCodes::AUTH_MISSING_KEY, Teracrafts::Huefy::ErrorCodes::AUTH_UNAUTHORIZED].include?(e.code)
     puts 'Invalid API key'
-  elsif e.code == Huefy::ErrorCodes::NETWORK_RETRY_LIMIT
+  elsif e.code == Teracrafts::Huefy::ErrorCodes::NETWORK_RETRY_LIMIT
     puts "Rate limited. Retry after #{e.retry_after}s"
-  elsif e.code == Huefy::ErrorCodes::CIRCUIT_OPEN
+  elsif e.code == Teracrafts::Huefy::ErrorCodes::CIRCUIT_OPEN
     puts 'Circuit open — service unavailable, backing off'
   elsif e.recoverable?
     puts "Network error: #{e.message}"
@@ -135,10 +135,10 @@ end
 
 | Class | Code | Meaning |
 |-------|------|---------|
-| `Huefy::HuefyError` | `AUTH_INVALID_KEY` / `AUTH_MISSING_KEY` / `AUTH_UNAUTHORIZED` | API key rejected |
-| `Huefy::HuefyError` | `NETWORK_RETRY_LIMIT` | Rate limit exceeded |
-| `Huefy::HuefyError` | `CIRCUIT_OPEN` | Circuit breaker tripped |
-| `Huefy::HuefyError` | `NETWORK_*`, `VALIDATION_ERROR`, `SECURITY_*` | Transport, validation, or security failure |
+| `Teracrafts::Huefy::HuefyError` | `AUTH_INVALID_KEY` / `AUTH_MISSING_KEY` / `AUTH_UNAUTHORIZED` | API key rejected |
+| `Teracrafts::Huefy::HuefyError` | `NETWORK_RETRY_LIMIT` | Rate limit exceeded |
+| `Teracrafts::Huefy::HuefyError` | `CIRCUIT_OPEN` | Circuit breaker tripped |
+| `Teracrafts::Huefy::HuefyError` | `NETWORK_*`, `VALIDATION_ERROR`, `SECURITY_*` | Transport, validation, or security failure |
 
 ## Health Check
 
@@ -154,11 +154,15 @@ end
 `HUEFY_MODE=local` resolves to `https://api.huefy.on/api/v1/sdk`. To bypass Caddy and hit the raw app port directly, override `base_url` to `http://localhost:8080/api/v1/sdk`:
 
 ```ruby
-client = Huefy::EmailClient.new(
+client = Teracrafts::Huefy::EmailClient.new(
   api_key: 'sdk_local_key',
   base_url: 'https://api.huefy.on/api/v1/sdk'
 )
 ```
+
+## Module Compatibility
+
+The canonical Ruby module is `Teracrafts::Huefy`. Existing `Huefy::...` references remain available as a compatibility alias.
 
 ## Developer Guide
 

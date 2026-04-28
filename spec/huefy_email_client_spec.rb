@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Huefy::EmailClient do
+RSpec.describe Teracrafts::Huefy::EmailClient do
   let(:send_email_response) do
     {
       "success" => true,
@@ -38,7 +38,7 @@ RSpec.describe Huefy::EmailClient do
 
   def make_client(response)
     client = described_class.new(api_key: "sdk_test_key")
-    http = instance_double(Huefy::Http::HttpClient)
+    http = instance_double(Teracrafts::Huefy::Http::HttpClient)
     allow(http).to receive(:request).and_return(response)
     client.instance_variable_set(:@http_client, http)
     client
@@ -75,7 +75,7 @@ RSpec.describe Huefy::EmailClient do
       response = client.send_email(
         template_key: "welcome",
         data: { "name" => "John" },
-        recipient: Huefy::Models::SendEmailRecipient.new(
+        recipient: Teracrafts::Huefy::Models::SendEmailRecipient.new(
           email: "john@example.com",
           type: "cc",
           data: { "locale" => "en" }
@@ -89,14 +89,14 @@ RSpec.describe Huefy::EmailClient do
       client = make_client(send_email_response)
       expect {
         client.send_email(template_key: "", data: {}, recipient: "john@example.com")
-      }.to raise_error(Huefy::HuefyError)
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
     end
 
     it "raises HuefyError for invalid recipient" do
       client = make_client(send_email_response)
       expect {
         client.send_email(template_key: "welcome", data: {}, recipient: "not-an-email")
-      }.to raise_error(Huefy::HuefyError)
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
     end
 
     it "raises HuefyError for invalid provider" do
@@ -108,7 +108,7 @@ RSpec.describe Huefy::EmailClient do
           recipient: "john@example.com",
           provider: "unknown-provider"
         )
-      }.to raise_error(Huefy::HuefyError)
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
     end
   end
 
@@ -120,8 +120,8 @@ RSpec.describe Huefy::EmailClient do
       response = client.send_bulk_emails(
         template_key: "welcome",
         recipients: [
-          Huefy::Models::BulkRecipient.new(email: "alice@example.com", data: { "name" => "Alice" }),
-          Huefy::Models::BulkRecipient.new(email: "bob@example.com", data: { "name" => "Bob" })
+          Teracrafts::Huefy::Models::BulkRecipient.new(email: "alice@example.com", data: { "name" => "Alice" }),
+          Teracrafts::Huefy::Models::BulkRecipient.new(email: "bob@example.com", data: { "name" => "Bob" })
         ]
       )
       expect(response.success).to be true
@@ -134,7 +134,7 @@ RSpec.describe Huefy::EmailClient do
       client = make_client(bulk_response)
       expect {
         client.send_bulk_emails(template_key: "welcome", recipients: [])
-      }.to raise_error(Huefy::HuefyError)
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
     end
 
     it "raises HuefyError when a recipient email is invalid" do
@@ -142,9 +142,9 @@ RSpec.describe Huefy::EmailClient do
       expect {
         client.send_bulk_emails(
           template_key: "welcome",
-          recipients: [Huefy::Models::BulkRecipient.new(email: "not-valid")]
+          recipients: [Teracrafts::Huefy::Models::BulkRecipient.new(email: "not-valid")]
         )
-      }.to raise_error(Huefy::HuefyError)
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
     end
 
     it "raises HuefyError when template_key is blank" do
@@ -152,9 +152,9 @@ RSpec.describe Huefy::EmailClient do
       expect {
         client.send_bulk_emails(
           template_key: "   ",
-          recipients: [Huefy::Models::BulkRecipient.new(email: "alice@example.com")]
+          recipients: [Teracrafts::Huefy::Models::BulkRecipient.new(email: "alice@example.com")]
         )
-      }.to raise_error(Huefy::HuefyError)
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
     end
 
     it "raises HuefyError when a recipient type is invalid" do
@@ -162,9 +162,9 @@ RSpec.describe Huefy::EmailClient do
       expect {
         client.send_bulk_emails(
           template_key: "welcome",
-          recipients: [Huefy::Models::BulkRecipient.new(email: "alice@example.com", type: "reply-to")]
+          recipients: [Teracrafts::Huefy::Models::BulkRecipient.new(email: "alice@example.com", type: "reply-to")]
         )
-      }.to raise_error(Huefy::HuefyError)
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
     end
   end
 end

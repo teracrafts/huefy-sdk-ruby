@@ -22,9 +22,13 @@ require_relative "huefy/huefy_email_client"
 # sanitization.
 #
 # @example Basic usage
-#   client = Huefy::Client.new(api_key: "your-api-key")
+#   client = Teracrafts::Huefy::Client.new(api_key: "your-api-key")
 #   health = client.health_check
 #   puts health["status"]
 #   client.close
 module Huefy
+end
+
+module Teracrafts
+  Huefy = ::Huefy unless const_defined?(:Huefy, false)
 end

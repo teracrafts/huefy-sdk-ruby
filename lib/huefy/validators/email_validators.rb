@@ -84,7 +84,7 @@ module Huefy
       #
       # @param template_key [String]
       # @param data [Hash]
-      # @param recipient [String, Huefy::Models::SendEmailRecipient, Hash]
+      # @param recipient [String, Teracrafts::Huefy::Models::SendEmailRecipient, Hash]
       # @return [Array<String>] array of error messages; empty if valid
       def self.validate_send_email_input(template_key, data, recipient)
         errors = []
@@ -101,7 +101,7 @@ module Huefy
         case recipient
         when String
           validate_email(recipient)
-        when Huefy::Models::SendEmailRecipient
+        when Teracrafts::Huefy::Models::SendEmailRecipient
           email_err = validate_email(recipient.email)
           return email_err if email_err
 

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "lib/huefy/version"
+require_relative "lib/teracrafts/huefy"
 
 Gem::Specification.new do |spec|
   spec.name          = "huefy"
-  spec.version       = Huefy::VERSION
+  spec.version       = Teracrafts::Huefy::VERSION
   spec.authors       = ["teracrafts"]
   spec.summary       = "Huefy Ruby SDK"
   spec.description   = "Official Ruby SDK for the Huefy API. " \

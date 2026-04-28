@@ -5,11 +5,11 @@ module Huefy
   # operations.
   #
   # @example
-  #   client = Huefy::EmailClient.new(api_key: "your-api-key")
+  #   client = Teracrafts::Huefy::EmailClient.new(api_key: "your-api-key")
   #   response = client.send_email(
   #     template_key: "welcome",
   #     data: { "name" => "John" },
-  #     recipient: Huefy::Models::SendEmailRecipient.new(email: "john@example.com", type: "cc")
+  #     recipient: Teracrafts::Huefy::Models::SendEmailRecipient.new(email: "john@example.com", type: "cc")
   #   )
   #   puts response.correlation_id
   #   client.close

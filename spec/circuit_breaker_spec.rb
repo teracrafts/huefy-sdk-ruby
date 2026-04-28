@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Huefy::Http::CircuitBreaker do
+RSpec.describe Teracrafts::Huefy::Http::CircuitBreaker do
   subject(:breaker) { described_class.new(**config) }
 
   let(:config) { { failure_threshold: 3, reset_timeout: 0.1, half_open_requests: 1 } }
@@ -15,8 +15,8 @@ RSpec.describe Huefy::Http::CircuitBreaker do
     it "transitions to open after failure threshold" do
       config[:failure_threshold].times do
         expect {
-          breaker.execute { raise Huefy::HuefyError.network_error("fail") }
-        }.to raise_error(Huefy::HuefyError)
+          breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("fail") }
+        }.to raise_error(Teracrafts::Huefy::HuefyError)
       end
 
       expect(breaker.current_state).to eq(:open)
@@ -25,8 +25,8 @@ RSpec.describe Huefy::Http::CircuitBreaker do
     it "rejects calls with circuit-open error when open" do
       config[:failure_threshold].times do
         begin
-          breaker.execute { raise Huefy::HuefyError.network_error("fail") }
-        rescue Huefy::HuefyError
+          breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("fail") }
+        rescue Teracrafts::Huefy::HuefyError
           # expected
         end
       end
@@ -35,16 +35,16 @@ RSpec.describe Huefy::Http::CircuitBreaker do
 
       expect {
         breaker.execute { "ok" }
-      }.to raise_error(Huefy::HuefyError) { |e|
-        expect(e.code).to eq(Huefy::ErrorCodes::CIRCUIT_OPEN)
+      }.to raise_error(Teracrafts::Huefy::HuefyError) { |e|
+        expect(e.code).to eq(Teracrafts::Huefy::ErrorCodes::CIRCUIT_OPEN)
       }
     end
 
     it "resets to closed state" do
       config[:failure_threshold].times do
         begin
-          breaker.execute { raise Huefy::HuefyError.network_error("fail") }
-        rescue Huefy::HuefyError
+          breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("fail") }
+        rescue Teracrafts::Huefy::HuefyError
           # expected
         end
       end
@@ -60,8 +60,8 @@ RSpec.describe Huefy::Http::CircuitBreaker do
       2.times { breaker.execute { "ok" } }
 
       begin
-        breaker.execute { raise Huefy::HuefyError.network_error("fail") }
-      rescue Huefy::HuefyError
+        breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("fail") }
+      rescue Teracrafts::Huefy::HuefyError
         # expected
       end
 
@@ -76,8 +76,8 @@ RSpec.describe Huefy::Http::CircuitBreaker do
     it "transitions to half-open after reset timeout" do
       config[:failure_threshold].times do
         begin
-          breaker.execute { raise Huefy::HuefyError.network_error("fail") }
-        rescue Huefy::HuefyError
+          breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("fail") }
+        rescue Teracrafts::Huefy::HuefyError
           # expected
         end
       end
@@ -92,8 +92,8 @@ RSpec.describe Huefy::Http::CircuitBreaker do
     it "transitions from half-open to closed on success" do
       config[:failure_threshold].times do
         begin
-          breaker.execute { raise Huefy::HuefyError.network_error("fail") }
-        rescue Huefy::HuefyError
+          breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("fail") }
+        rescue Teracrafts::Huefy::HuefyError
           # expected
         end
       end
@@ -108,8 +108,8 @@ RSpec.describe Huefy::Http::CircuitBreaker do
     it "transitions from half-open back to open on failure" do
       config[:failure_threshold].times do
         begin
-          breaker.execute { raise Huefy::HuefyError.network_error("fail") }
-        rescue Huefy::HuefyError
+          breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("fail") }
+        rescue Teracrafts::Huefy::HuefyError
           # expected
         end
       end
@@ -117,8 +117,8 @@ RSpec.describe Huefy::Http::CircuitBreaker do
       sleep(0.15) # Wait past reset timeout
 
       expect {
-        breaker.execute { raise Huefy::HuefyError.network_error("still failing") }
-      }.to raise_error(Huefy::HuefyError)
+        breaker.execute { raise Teracrafts::Huefy::HuefyError.network_error("still failing") }
+      }.to raise_error(Teracrafts::Huefy::HuefyError)
 
       expect(breaker.current_state).to eq(:open)
     end
