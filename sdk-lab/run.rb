@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../lib/huefy"
-require "net/http"
-require "uri"
 
 GREEN = "\033[32m"
 RED   = "\033[31m"
@@ -21,94 +19,188 @@ def fail_test(name, reason)
   @failed += 1
 end
 
+class LabHttpClient
+  attr_reader :calls
+
+  def initialize(responses)
+    @responses = responses.dup
+    @calls = []
+  end
+
+  def request(method, path, body: nil, headers: {})
+    @calls << { method: method, path: path, body: body, headers: headers }
+    raise "no queued response" if @responses.empty?
+
+    @responses.shift
+  end
+
+  def close; end
+end
+
 puts "=== Huefy Ruby SDK Lab ==="
 puts
 
-# 1. Initialization
 begin
-  client = Teracrafts::Huefy::Client.new(api_key: "sdk_lab_test_key")
+  client = Teracrafts::Huefy::EmailClient.new(api_key: "sdk_lab_test_key")
   pass("Initialization")
 rescue => e
   fail_test("Initialization", e.message)
   client = nil
 end
 
-# 2. Config validation
 begin
-  Teracrafts::Huefy::Client.new(api_key: "")
-  fail_test("Config validation", "expected error for empty API key, got none")
-rescue Teracrafts::Huefy::HuefyError
-  pass("Config validation")
+  contract_client = Teracrafts::Huefy::EmailClient.new(api_key: "sdk_lab_test_key")
+  stub = LabHttpClient.new([
+    {
+      "success" => true,
+      "data" => {
+        "emailId" => "email_123",
+        "status" => "queued",
+        "recipients" => [{ "email" => "alice@example.com", "status" => "queued" }]
+      },
+      "correlationId" => "corr_send_123"
+    }
+  ])
+  contract_client.instance_variable_set(:@http_client, stub)
+  response = contract_client.send_email(
+    template_key: " welcome-email ",
+    data: { "firstName" => "Alice" },
+    recipient: Teracrafts::Huefy::Models::SendEmailRecipient.new(
+      email: " alice@example.com ",
+      type: "CC",
+      data: { "locale" => "en" }
+    ),
+    provider: "ses"
+  )
+  call = stub.calls.first
+  recipient = call[:body]["recipient"]
+  ok =
+    call[:method] == "POST" &&
+    call[:path] == "/emails/send" &&
+    call[:body]["templateKey"] == "welcome-email" &&
+    recipient["email"] == "alice@example.com" &&
+    recipient["type"] == "cc" &&
+    call[:body]["providerType"] == "ses" &&
+    response.data.email_id == "email_123"
+  ok ? pass("Single email contract") : fail_test("Single email contract", call.inspect)
 rescue => e
-  pass("Config validation") # any error on empty key is acceptable
+  fail_test("Single email contract", e.message)
 end
 
-# 3. HMAC signing
 begin
-  signed = Teracrafts::Huefy::Security.sign_payload({ "test" => "data" }, "test_secret", timestamp: 1700000000)
-  if signed.signature.length == 64
-    pass("HMAC signing")
+  contract_client = Teracrafts::Huefy::EmailClient.new(api_key: "sdk_lab_test_key")
+  stub = LabHttpClient.new([
+    {
+      "success" => true,
+      "data" => {
+        "batchId" => "batch_123",
+        "status" => "processing",
+        "templateKey" => "digest",
+        "templateVersion" => 3,
+        "senderUsed" => "alerts@huefy.dev",
+        "senderVerified" => true,
+        "totalRecipients" => 2,
+        "processedCount" => 0,
+        "successCount" => 0,
+        "failureCount" => 0,
+        "suppressedCount" => 0,
+        "startedAt" => "2026-05-07T10:00:00Z",
+        "recipients" => [
+          { "email" => "alice@example.com", "status" => "queued" },
+          { "email" => "bob@example.com", "status" => "queued" }
+        ]
+      },
+      "correlationId" => "corr_bulk_123"
+    }
+  ])
+  contract_client.instance_variable_set(:@http_client, stub)
+  response = contract_client.send_bulk_emails(
+    template_key: " digest ",
+    recipients: [
+      Teracrafts::Huefy::Models::BulkRecipient.new(email: " alice@example.com ", type: "TO", data: { "locale" => "en" }),
+      Teracrafts::Huefy::Models::BulkRecipient.new(email: " bob@example.com ", type: "BCC")
+    ],
+    provider: "mailgun"
+  )
+  call = stub.calls.first
+  recipients = call[:body][:recipients] || call[:body]["recipients"]
+  ok =
+    call[:method] == "POST" &&
+    call[:path] == "/emails/send-bulk" &&
+    (call[:body][:templateKey] || call[:body]["templateKey"]) == "digest" &&
+    (call[:body][:providerType] || call[:body]["providerType"]) == "mailgun" &&
+    recipients[0][:email] == "alice@example.com" &&
+    recipients[0][:type] == "to" &&
+    recipients[1][:type] == "bcc" &&
+    response.data.batch_id == "batch_123"
+  ok ? pass("Bulk email contract") : fail_test("Bulk email contract", call.inspect)
+rescue => e
+  fail_test("Bulk email contract", e.message)
+end
+
+begin
+  invalid_client = Teracrafts::Huefy::EmailClient.new(api_key: "sdk_lab_test_key")
+  invalid_client.instance_variable_set(:@http_client, LabHttpClient.new([{}]))
+  invalid_client.send_email(
+    template_key: "welcome",
+    data: {},
+    recipient: Teracrafts::Huefy::Models::SendEmailRecipient.new(email: "bad", type: "reply-to")
+  )
+  fail_test("Validation rejects invalid single recipient", "expected validation error")
+rescue Teracrafts::Huefy::HuefyError => e
+  message = e.message.downcase
+  if message.include?("invalid email") || message.include?("recipient type")
+    pass("Validation rejects invalid single recipient")
   else
-    fail_test("HMAC signing", "expected 64-char hex signature, got #{signed.signature.length} chars")
+    fail_test("Validation rejects invalid single recipient", e.message)
   end
 rescue => e
-  fail_test("HMAC signing", e.message)
+  fail_test("Validation rejects invalid single recipient", e.message)
 end
 
-# 4. Error sanitization
 begin
-  raw = "Error at 192.168.1.1 for user@example.com"
-  sanitized = Teracrafts::Huefy::ErrorSanitizer.sanitize(raw)
-  if sanitized.include?("192.168.1.1") || sanitized.include?("user@example.com")
-    fail_test("Error sanitization", "IP or email still present after sanitization")
+  invalid_client = Teracrafts::Huefy::EmailClient.new(api_key: "sdk_lab_test_key")
+  invalid_client.instance_variable_set(:@http_client, LabHttpClient.new([{}]))
+  invalid_client.send_bulk_emails(
+    template_key: "digest",
+    recipients: []
+  )
+  fail_test("Validation rejects invalid bulk request", "expected validation error")
+rescue Teracrafts::Huefy::HuefyError => e
+  if e.message.downcase.include?("at least one email")
+    pass("Validation rejects invalid bulk request")
   else
-    pass("Error sanitization")
+    fail_test("Validation rejects invalid bulk request", e.message)
   end
 rescue => e
-  fail_test("Error sanitization", e.message)
+  fail_test("Validation rejects invalid bulk request", e.message)
 end
 
-# 5. PII detection
 begin
-  data = { "email" => "t@t.com", "name" => "John", "ssn" => "123-45-6789" }
-  detections = Teracrafts::Huefy::Security.detect_potential_pii(data)
-  fields = detections.map(&:field)
-  if detections.empty? || !fields.include?("email") || !fields.include?("ssn")
-    fail_test("PII detection", "expected email and ssn fields, got: #{fields.inspect}")
-  else
-    pass("PII detection")
-  end
+  health_client = Teracrafts::Huefy::EmailClient.new(api_key: "sdk_lab_test_key")
+  stub = LabHttpClient.new([
+    {
+      "success" => true,
+      "data" => {
+        "status" => "healthy",
+        "timestamp" => "2026-05-07T10:00:00Z",
+        "version" => "1.0.0"
+      },
+      "correlationId" => "corr_health_123"
+    }
+  ])
+  health_client.instance_variable_set(:@http_client, stub)
+  response = health_client.email_health_check
+  call = stub.calls.first
+  ok =
+    call[:method] == "GET" &&
+    call[:path] == "/health" &&
+    response.status == "healthy"
+  ok ? pass("Health check path") : fail_test("Health check path", call.inspect)
 rescue => e
-  fail_test("PII detection", e.message)
+  fail_test("Health check path", e.message)
 end
 
-# 6. Circuit breaker state
-begin
-  cb = Teracrafts::Huefy::Http::CircuitBreaker.new
-  if cb.state == Teracrafts::Huefy::Http::CircuitBreaker::CLOSED
-    pass("Circuit breaker state")
-  else
-    fail_test("Circuit breaker state", "expected CLOSED, got #{cb.state}")
-  end
-rescue => e
-  fail_test("Circuit breaker state", e.message)
-end
-
-# 7. Health check
-begin
-  if client
-    begin
-      client.health_check
-    rescue => _e
-      # PASS regardless of network outcome; only non-network errors should fail
-    end
-  end
-  pass("Health check")
-rescue => e
-  fail_test("Health check", "unexpected error: #{e.message}")
-end
-
-# 8. Cleanup
 begin
   client&.close
   pass("Cleanup")

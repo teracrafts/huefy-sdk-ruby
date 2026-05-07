@@ -33,7 +33,7 @@ module Teracrafts
       # @return [Hash] the request as a hash
       def to_h
         result = {
-          "templateKey" => @template_key,
+          "templateKey" => @template_key.strip,
           "recipient" => serialize_recipient(@recipient),
           "data" => @data
         }

@@ -56,10 +56,11 @@ module Teracrafts
 
     # @return [String] formatted error string
     def to_s
+      base_message = super()
       if @cause_error
-        "[#{@code}] #{message}: #{@cause_error.message}"
+        "[#{@code}] #{base_message}: #{@cause_error.message}"
       else
-        "[#{@code}] #{message}"
+        "[#{@code}] #{base_message}"
       end
     end
 
