@@ -1,22 +1,26 @@
 # Huefy Ruby SDK Lab
 
-A standalone verification runner for the Huefy Ruby SDK.
-
-## Scenarios
-
-1. **Initialization** — create client with a dummy key, verify no error
-2. **Config validation** — empty API key raises an error
-3. **HMAC signing** — sign payload with HMAC-SHA256, verify 64-char hex result
-4. **Error sanitization** — IP and email redacted from error messages
-5. **PII detection** — email and SSN fields detected in data hash
-6. **Circuit breaker state** — new circuit breaker starts in CLOSED state
-7. **Health check** — invoke `GET /health` against the configured base URL
-8. **Cleanup** — close client gracefully
+Verifies the core email contract through the real `Teracrafts::Huefy::EmailClient` without sending live email.
 
 ## Run
 
-From `sdks/ruby/`:
-
 ```bash
-ruby sdk-lab/run.rb
+/opt/homebrew/opt/ruby/bin/ruby sdk-lab/run.rb
 ```
+
+from `sdks/ruby/`.
+
+## Scenarios
+
+1. Initialization
+2. Single email contract
+3. Bulk email contract
+4. Validation rejects invalid single recipient
+5. Validation rejects invalid bulk request
+6. Health check path
+7. Cleanup
+
+## Notes
+
+- The lab swaps in a local stub HTTP client.
+- It verifies request normalization, parsed responses, and validation-before-transport behavior.
