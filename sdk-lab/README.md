@@ -5,7 +5,7 @@ Verifies the core email contract through the real `Teracrafts::Huefy::EmailClien
 ## Run
 
 ```bash
-/opt/homebrew/opt/ruby/bin/ruby sdk-lab/run.rb
+./sdk-lab/run.sh
 ```
 
 from `sdks/ruby/`.
@@ -24,3 +24,4 @@ from `sdks/ruby/`.
 
 - The lab swaps in a local stub HTTP client.
 - It verifies request normalization, parsed responses, and validation-before-transport behavior.
+- The launcher prefers a Homebrew Ruby toolchain when available and falls back to `bundle exec ruby` or `ruby`.
