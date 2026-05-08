@@ -21,7 +21,9 @@ module Teracrafts
         @retry_handler = RetryHandler.new(config.retry_config)
         @circuit_breaker = CircuitBreaker.new(**config.circuit_breaker_config)
 
-        @connection = Faraday.new(url: config.base_url) do |f|
+        base_url = config.base_url.end_with?("/") ? config.base_url : "#{config.base_url}/"
+
+        @connection = Faraday.new(url: base_url) do |f|
           f.options.timeout = config.timeout
           f.options.open_timeout = config.timeout
           f.headers["Content-Type"] = "application/json"
@@ -73,9 +75,11 @@ module Teracrafts
       private
 
       def perform_request(method, path, body, extra_headers)
+        request_path = path.sub(%r{\A/+}, "")
+
         response = @connection.run_request(
           method.downcase.to_sym,
-          path,
+          request_path,
           body,
           extra_headers
         )
