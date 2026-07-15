@@ -140,6 +140,8 @@ module Teracrafts
         new(body || "Forbidden", code: ErrorCodes::AUTH_INVALID_KEY, status_code: 403, request_id: request_id)
       when 408
         new(body || "Request timeout", code: ErrorCodes::NETWORK_TIMEOUT, status_code: 408, request_id: request_id)
+      when 402
+        new(body || "Insufficient quota", code: ErrorCodes::INSUFFICIENT_QUOTA, status_code: 402, request_id: request_id)
       when 429
         new(body || "Rate limited", code: ErrorCodes::NETWORK_RETRY_LIMIT, status_code: 429, request_id: request_id, retry_after: retry_after)
       when 500..599

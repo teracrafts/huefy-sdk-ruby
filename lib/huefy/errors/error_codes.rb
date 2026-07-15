@@ -40,6 +40,9 @@ module Teracrafts
     # Validation
     VALIDATION_ERROR = "VALIDATION_ERROR"
 
+    # Billing / quota
+    INSUFFICIENT_QUOTA = "INSUFFICIENT_QUOTA"
+
     # Maps each error code to a stable numeric identifier.
     NUMERIC_CODES = {
       INIT_FAILED                => 1000,
@@ -57,7 +60,8 @@ module Teracrafts
       CONFIG_MISSING_REQUIRED    => 1401,
       SECURITY_PII_DETECTED      => 1500,
       SECURITY_SIGNATURE_INVALID => 1501,
-      VALIDATION_ERROR           => 1600
+      VALIDATION_ERROR           => 1600,
+      INSUFFICIENT_QUOTA         => 1700
     }.freeze
 
     # Error codes that represent transient / recoverable failures.
