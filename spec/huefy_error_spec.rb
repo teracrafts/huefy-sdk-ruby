@@ -18,5 +18,18 @@ RSpec.describe Teracrafts::Huefy::HuefyError do
       expect(error.recoverable?).to be(false)
       expect(error.message).to include("Quota exceeded")
     end
+
+    it "maps quota payloads before status-derived errors" do
+      error = described_class.from_response(
+        500,
+        "{\"error\":\"Quota exceeded\",\"code\":\"INSUFFICIENT_QUOTA\"}",
+        request_id: "req_456"
+      )
+
+      expect(error.code).to eq(Teracrafts::Huefy::ErrorCodes::INSUFFICIENT_QUOTA)
+      expect(error.status_code).to eq(500)
+      expect(error.request_id).to eq("req_456")
+      expect(error.recoverable?).to be(false)
+    end
   end
 end

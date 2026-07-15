@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Teracrafts
   module Huefy
     # The primary error class raised by the Huefy Ruby SDK.
@@ -133,6 +135,10 @@ module Teracrafts
     # @param request_id [String, nil] value of the X-Request-Id response header
     # @param retry_after [Float, nil] parsed Retry-After value in seconds
     def self.from_response(status_code, body = nil, request_id: nil, retry_after: nil)
+      if quota_exhaustion_body?(body)
+        return new(body || "Insufficient quota", code: ErrorCodes::INSUFFICIENT_QUOTA, status_code: status_code, request_id: request_id)
+      end
+
       case status_code
       when 401
         new(body || "Unauthorized", code: ErrorCodes::AUTH_UNAUTHORIZED, status_code: 401, request_id: request_id)
@@ -149,6 +155,15 @@ module Teracrafts
       else
         new(body || "HTTP #{status_code}", code: ErrorCodes::NETWORK_ERROR, status_code: status_code, request_id: request_id)
       end
+    end
+
+    def self.quota_exhaustion_body?(body)
+      return false if body.nil? || body.empty?
+
+      parsed = JSON.parse(body)
+      parsed.is_a?(Hash) && parsed["code"] == ErrorCodes::INSUFFICIENT_QUOTA
+    rescue JSON::ParserError
+      false
     end
     end
   end

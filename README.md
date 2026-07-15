@@ -117,6 +117,8 @@ begin
 rescue Teracrafts::Huefy::HuefyError => e
   if [Teracrafts::Huefy::ErrorCodes::AUTH_INVALID_KEY, Teracrafts::Huefy::ErrorCodes::AUTH_MISSING_KEY, Teracrafts::Huefy::ErrorCodes::AUTH_UNAUTHORIZED].include?(e.code)
     puts 'Invalid API key'
+  elsif e.code == Teracrafts::Huefy::ErrorCodes::INSUFFICIENT_QUOTA
+    puts 'Quota exhausted. Upgrade or wait for the next billing period'
   elsif e.code == Teracrafts::Huefy::ErrorCodes::NETWORK_RETRY_LIMIT
     puts "Rate limited. Retry after #{e.retry_after}s"
   elsif e.code == Teracrafts::Huefy::ErrorCodes::CIRCUIT_OPEN
@@ -136,6 +138,7 @@ end
 | Class | Code | Meaning |
 |-------|------|---------|
 | `Teracrafts::Huefy::HuefyError` | `AUTH_INVALID_KEY` / `AUTH_MISSING_KEY` / `AUTH_UNAUTHORIZED` | API key rejected |
+| `Teracrafts::Huefy::HuefyError` | `INSUFFICIENT_QUOTA` | Account or organization quota exhausted |
 | `Teracrafts::Huefy::HuefyError` | `NETWORK_RETRY_LIMIT` | Rate limit exceeded |
 | `Teracrafts::Huefy::HuefyError` | `CIRCUIT_OPEN` | Circuit breaker tripped |
 | `Teracrafts::Huefy::HuefyError` | `NETWORK_*`, `VALIDATION_ERROR`, `SECURITY_*` | Transport, validation, or security failure |
